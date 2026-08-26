@@ -1,1 +1,40 @@
 <p>group-management works!</p>
+<app-navbar></app-navbar>
+
+<div class="group-management">
+  <h2>Manage: {{ group.name }}</h2>
+  <p class="note">Group name can't be changed here — only Super Admin can rename a group.</p>
+
+  <section class="metadata">
+    <label>Age limit
+      <input type="number" [(ngModel)]="group.minAge" />
+    </label>
+    <button (click)="saveMetadata()">Save</button>
+  </section>
+
+  <section class="join-requests">
+    <h3>Pending Join Requests</h3>
+    <div class="request-row" *ngFor="let req of pendingRequests">
+      <span>{{ req.username }}</span>
+      <button (click)="approve(req)">Approve</button>
+      <button (click)="deny(req)" class="danger">Deny</button>
+    </div>
+    <p *ngIf="pendingRequests.length === 0" class="empty">No pending requests.</p>
+  </section>
+
+  <section class="members">
+    <h3>Members</h3>
+    <div class="member-row" *ngFor="let member of group.members">
+      <span>{{ member.username }}</span>
+      <button (click)="banFromGroup(member)" class="danger">Ban from group</button>
+      <button (click)="requestSystemBan(member)" class="danger-outline">
+        Request system-wide ban
+      </button>
+    </div>
+  </section>
+
+  <section class="channels">
+    <h3>Channels in this group</h3>
+    <app-channel-management [group]="group"></app-channel-management>
+  </section>
+</div>

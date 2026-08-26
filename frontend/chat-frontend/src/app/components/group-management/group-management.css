@@ -1,0 +1,36 @@
+.group-management { padding: 1.5rem; max-width: 700px; }
+
+.note { color: #888; font-size: 0.85rem; margin-bottom: 1rem; }
+
+section { margin-bottom: 2rem; }
+
+.metadata { display: flex; align-items: center; gap: 0.6rem; }
+.metadata input { width: 80px; padding: 0.3rem; }
+
+.request-row, .member-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.request-row span, .member-row span { flex: 1; }
+
+button {
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #5865f2;
+  color: #fff;
+}
+
+.danger { background: #f04747; }
+.danger-outline {
+  background: transparent;
+  border: 1px solid #f04747;
+  color: #f04747;
+}
+
+.empty { color: #999; }
