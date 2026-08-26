@@ -1,1 +1,18 @@
 <p>channel-list works!</p>
+<div class="channel-list">
+  <div class="header">
+    <h3>{{ group.name }} — Channels</h3>
+    <button *ngIf="isGroupAdmin" (click)="openCreateChannel()">+ New Channel</button>
+    <a *ngIf="!isGroupAdmin" (click)="requestNewChannel()">Request a channel</a>
+  </div>
+
+  <ul>
+    <li *ngFor="let channel of channels"
+        (click)="openChannel(channel)"
+        [class.active]="channel.id === activeChannelId">
+      # {{ channel.name }}
+    </li>
+  </ul>
+
+  <app-chat-window *ngIf="activeChannelId" [channelId]="activeChannelId"></app-chat-window>
+</div>

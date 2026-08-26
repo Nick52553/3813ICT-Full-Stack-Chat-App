@@ -1,0 +1,36 @@
+.channel-list {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 1rem;
+}
+
+.header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+ul { list-style: none; padding: 0; }
+
+li {
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+li:hover { background: #f0f0f0; }
+li.active { background: #5865f2; color: #fff; }
+
+button {
+  border: none;
+  background: #5865f2;
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+}
+
+/* on mobile, channel list collapses above chat, not beside it */
+@media (max-width: 768px) {
+  .channel-list { grid-template-columns: 1fr; }
+}
