@@ -41,9 +41,7 @@ suitability for a small team working over a short timeframe.
   touching related code, to allow for review before merging.
 - `.gitignore` excludes `node_modules/`, environment files, and build artefacts.
 
-**Team-specific notes:**
-[If working solo, note that; if in a team, note how you're dividing work across branches to
-avoid collisions — e.g. one person on frontend components, one on backend endpoints.]
+
 
 ---
 

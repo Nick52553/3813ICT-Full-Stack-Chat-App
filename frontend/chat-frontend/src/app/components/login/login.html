@@ -1,0 +1,55 @@
+
+<!--THE NAVIGATION BAR   I ADDED THIS :)-->
+
+<nav class="navbar">
+  <span class="brand">Fabulari</span>
+ 
+  <ul class="nav-links">
+    <!-- everyone -->
+    <li><a routerLink="/dashboard">Dashboard</a></li>
+    <li><a routerLink="/groups">Browse Groups</a></li>
+    <li><a routerLink="/profile">Profile</a></li>
+ 
+    <!-- group admin + super admin only -->
+    <li *ngIf="currentUser.role === 'groupAdmin' || currentUser.role === 'superAdmin'">
+      <a routerLink="/admin/groups">Manage My Groups</a>
+    </li>
+ 
+    <!-- super admin only -->
+    <li *ngIf="currentUser.role === 'superAdmin'">
+      <a routerLink="/admin/users">Manage Users</a>
+    </li>
+  </ul>
+ 
+  <div class="nav-right">
+    <span class="status-dot" [class.online]="currentUser.online"></span>
+    <span class="username">{{ currentUser.username }}</span>
+    <button (click)="logout()">Log Out</button>
+  </div>
+</nav>
+
+
+
+
+<!--Login Page   I ADDED THIS :)-->
+
+
+<div class="login-page">
+  <div class="login-card">
+    <h1 class="app-name">Fabulari</h1>
+
+    <form> <!-- TODO: bind (ngSubmit)="onLogin()" + reactive/template form -->
+      <label for="username">Username</label>
+      <input id="username" type="text" placeholder="Enter username" />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="Enter password" />
+
+      <div class="error-message" *ngIf="loginFailed">
+        Invalid username or password.
+      </div>
+
+      <button type="submit">Log In</button>
+    </form>
+  </div>
+</div>

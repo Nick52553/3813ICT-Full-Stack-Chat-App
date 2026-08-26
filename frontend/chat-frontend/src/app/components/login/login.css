@@ -1,0 +1,55 @@
+.login-page {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1e1f24;
+}
+
+.login-card {
+  background: #2a2c33;
+  padding: 2.5rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.app-name {
+  text-align: center;
+  color: #fff;
+  margin-bottom: 1.5rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+input {
+  padding: 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #1e1f24;
+  color: #fff;
+}
+
+button {
+  margin-top: 0.5rem;
+  padding: 0.7rem;
+  border-radius: 6px;
+  border: none;
+  background: #5865f2;
+  color: #fff;
+  cursor: pointer;
+}
+
+.error-message {
+  color: #f04747;
+  font-size: 0.85rem;
+}
+
+/* Responsive: on narrow screens, card fills more width */
+@media (max-width: 480px) {
+  .login-card { max-width: 90vw; }
+}
