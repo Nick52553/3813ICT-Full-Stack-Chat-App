@@ -1,1 +1,29 @@
 <p>dashboard works!</p>
+<app-navbar></app-navbar>
+
+<div class="dashboard">
+  <aside class="sidebar">
+    <h3>My Groups</h3>
+    <ul>
+      <li *ngFor="let group of myGroups" (click)="selectGroup(group)">
+        {{ group.name }}
+      </li>
+    </ul>
+  </aside>
+
+  <main class="main-panel">
+    <div *ngIf="!selectedGroup" class="empty-state">
+      Select a group from the left to see its channels,
+      or <a routerLink="/groups">browse all groups</a> to request to join one.
+    </div>
+
+    <app-channel-list *ngIf="selectedGroup" [group]="selectedGroup"></app-channel-list>
+  </main>
+
+  <!-- shown only for super admin -->
+  <section class="admin-quick-panel" *ngIf="currentUser.role === 'superAdmin'">
+    <h4>Pending user creation requests</h4>
+    <p>{{ pendingRequestCount }} awaiting approval</p>
+    <a routerLink="/admin/users">Go to User Management</a>
+  </section>
+</div>

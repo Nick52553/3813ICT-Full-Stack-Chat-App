@@ -1,0 +1,42 @@
+.dashboard {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: calc(100vh - 56px);
+}
+
+.sidebar {
+  background: #22232a;
+  color: #fff;
+  padding: 1rem;
+}
+
+.sidebar li {
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  list-style: none;
+}
+.sidebar li:hover { background: #2f3038; }
+
+.main-panel {
+  padding: 1.5rem;
+}
+
+.empty-state {
+  color: #888;
+  text-align: center;
+  margin-top: 4rem;
+}
+
+.admin-quick-panel {
+  grid-column: 1 / -1;
+  background: #fff3cd;
+  padding: 1rem;
+  border-top: 1px solid #e0c46c;
+}
+
+/* stack sidebar above content on mobile */
+@media (max-width: 768px) {
+  .dashboard { grid-template-columns: 1fr; }
+  .sidebar { display: flex; overflow-x: auto; }
+}
