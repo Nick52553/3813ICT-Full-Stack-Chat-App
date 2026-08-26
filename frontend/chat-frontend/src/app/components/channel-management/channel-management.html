@@ -1,1 +1,21 @@
 <p>channel-management works!</p>
+<div class="channel-management">
+  <div class="create-row">
+    <input type="text" placeholder="New channel name" [(ngModel)]="newChannelName" />
+    <button (click)="createChannel()">Create</button>
+  </div>
+
+  <div class="channel-row" *ngFor="let channel of group.channels">
+    <span># {{ channel.name }}</span>
+    <button (click)="removeChannel(channel)" class="danger">Remove</button>
+  </div>
+
+  <div class="channel-requests" *ngIf="pendingChannelRequests.length">
+    <h4>Channel requests from users</h4>
+    <div class="request-row" *ngFor="let req of pendingChannelRequests">
+      <span>"{{ req.name }}" — requested by {{ req.requestedBy }}</span>
+      <button (click)="approveChannelRequest(req)">Approve</button>
+      <button (click)="denyChannelRequest(req)" class="danger">Deny</button>
+    </div>
+  </div>
+</div>
