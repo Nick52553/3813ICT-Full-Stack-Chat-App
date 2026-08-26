@@ -1,1 +1,22 @@
 <p>group-list works!</p>
+<app-navbar></app-navbar>
+
+<div class="group-list-page">
+  <h2>All Groups</h2>
+  <p class="sub">Anyone can browse groups — request to join the ones you want in.</p>
+
+  <div class="group-grid">
+    <div class="group-card" *ngFor="let group of allGroups">
+      <h3>{{ group.name }}</h3>
+      <p>{{ group.description }}</p>
+      <span class="age-badge">Min age: {{ group.minAge }}</span>
+
+      <button *ngIf="!group.isMember && !group.requestPending"
+              (click)="requestToJoin(group)">
+        Request to Join
+      </button>
+      <span *ngIf="group.requestPending" class="pending">Request pending…</span>
+      <span *ngIf="group.isMember" class="member">Already a member</span>
+    </div>
+  </div>
+</div>

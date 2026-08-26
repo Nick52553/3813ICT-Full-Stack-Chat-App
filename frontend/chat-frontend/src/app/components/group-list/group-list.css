@@ -1,0 +1,37 @@
+.group-list-page { padding: 1.5rem; }
+
+.sub { color: #777; margin-bottom: 1.5rem; }
+
+.group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.group-card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.age-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  background: #eee;
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+  margin: 0.5rem 0;
+}
+
+button {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: none;
+  background: #5865f2;
+  color: #fff;
+  cursor: pointer;
+}
+
+.pending { color: #d99a2b; }
+.member { color: #43b581; }
