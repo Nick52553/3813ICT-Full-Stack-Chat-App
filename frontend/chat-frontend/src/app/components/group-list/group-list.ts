@@ -1,18 +1,41 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Navbar } from '../navbar/navbar';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-group-list',
   standalone: true,
-  imports: [CommonModule, Navbar],
+  imports: [
+    CommonModule,
+    RouterLink,
+    Navbar
+  ],
   templateUrl: './group-list.html',
   styleUrl: './group-list.css'
 })
-export class GroupList {
-  allGroups: any[] = [];
+export class GroupList implements OnInit {
 
-  requestToJoin(group: any) {
-    group.requestPending = true;
+  groups: any[] = [];
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit() {
+
+    this.http.get<any[]>(
+      'http://localhost:3000/api/groups'
+    ).subscribe({
+
+      next: (groups) => {
+        this.groups = groups;
+      },
+
+      error: (error) => {
+        console.error('Could not load groups:', error);
+      }
+
+    });
+
   }
 }

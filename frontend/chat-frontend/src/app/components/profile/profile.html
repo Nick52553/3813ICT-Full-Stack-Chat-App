@@ -4,129 +4,34 @@
 
   <main class="profile-container">
 
-    <section class="profile-header">
-      <div>
-        <h1>My Profile</h1>
-        <p>View and manage your personal account information.</p>
+    <h1>My Profile</h1>
+
+    <div class="profile-card">
+
+      <div class="profile-avatar">
+        {{ initials }}
       </div>
 
-      <button class="edit-button">
-        Edit Profile
-      </button>
-    </section>
+      <div class="profile-details">
 
-    <section class="profile-content">
-
-      <!-- Profile Card -->
-      <div class="profile-card">
-
-        <div class="profile-image-section">
-          <div class="profile-image">
-            <span>NB</span>
-          </div>
-
-          <button class="change-photo-button">
-            Change Photo
-          </button>
+        <div class="detail">
+          <span>Username</span>
+          <strong>{{ currentUser.username }}</strong>
         </div>
 
-        <div class="profile-details">
+        <div class="detail">
+          <span>Age</span>
+          <strong>{{ currentUser.age }}</strong>
+        </div>
 
-          <div class="detail-group">
-            <label>First Name</label>
-            <p>Nick</p>
-          </div>
-
-          <div class="detail-group">
-            <label>Last Name</label>
-            <p>Bailey</p>
-          </div>
-
-          <div class="detail-group">
-            <label>Email</label>
-            <p>nick@example.com</p>
-          </div>
-
-          <div class="detail-group">
-            <label>Age</label>
-            <p>21</p>
-          </div>
-
-          <div class="detail-group">
-            <label>Username</label>
-            <p>Nick</p>
-          </div>
-
-          <div class="detail-group">
-            <label>Account Role</label>
-            <span class="role-badge">Regular User</span>
-          </div>
-
+        <div class="detail">
+          <span>Account Role</span>
+          <strong>{{ roleName }}</strong>
         </div>
 
       </div>
 
-      <!-- Account Settings -->
-      <div class="settings-card">
-
-        <div class="card-heading">
-          <h2>Account Settings</h2>
-          <p>Manage your account preferences.</p>
-        </div>
-
-        <div class="settings-row">
-          <div>
-            <h3>Password</h3>
-            <p>Your password is securely stored on the server.</p>
-          </div>
-
-          <button class="secondary-button">
-            Change Password
-          </button>
-        </div>
-
-        <div class="settings-row">
-          <div>
-            <h3>Appearance</h3>
-            <p>Customise the look of your application.</p>
-          </div>
-
-          <select>
-            <option>Default</option>
-            <option>Light</option>
-            <option>Dark</option>
-          </select>
-        </div>
-
-      </div>
-
-      <!-- Account Information -->
-      <div class="info-card">
-
-        <h2>Account Information</h2>
-
-        <div class="info-grid">
-
-          <div>
-            <span>Account ID</span>
-            <strong>2</strong>
-          </div>
-
-          <div>
-            <span>Account Status</span>
-            <strong class="active-status">Active</strong>
-          </div>
-
-          <div>
-            <span>Member Since</span>
-            <strong>August 2026</strong>
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
+    </div>
 
   </main>
 

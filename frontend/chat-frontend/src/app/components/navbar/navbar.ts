@@ -13,11 +13,11 @@ import { Router, RouterLink } from '@angular/router';
   styleUrl: './navbar.css'
 })
 export class Navbar {
-  currentUser: any = {
-    username: 'User',
-    role: 'user',
-    online: true
-  };
+
+  currentUser: any = JSON.parse(
+    localStorage.getItem('currentUser') ||
+    '{"username":"User","role":"user","online":true}'
+  );
 
   constructor(private router: Router) {}
 

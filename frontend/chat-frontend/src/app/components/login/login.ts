@@ -28,6 +28,10 @@ export class Login {
 
   login() {
 
+    console.log('Login button clicked');
+    console.log('Username:', this.username);
+    console.log('Password:', this.password);
+
     this.loginFailed = false;
 
     this.http.post<any>(
@@ -40,19 +44,20 @@ export class Login {
 
       next: (user) => {
 
-        // Save logged-in user
+        console.log('Login successful:', user);
+
         localStorage.setItem(
           'currentUser',
           JSON.stringify(user)
         );
 
-        // Go to dashboard
         this.router.navigate(['/dashboard']);
       },
 
-      error: () => {
+      error: (error) => {
 
-        // Login failed
+        console.error('Login failed:', error);
+
         this.loginFailed = true;
 
       }

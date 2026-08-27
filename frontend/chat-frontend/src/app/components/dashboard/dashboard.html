@@ -1,30 +1,51 @@
+<div class="dashboard-page">
 
-<app-navbar></app-navbar>
+  <app-navbar></app-navbar>
 
-<div class="dashboard">
-  <aside class="sidebar">
-    <h3>My Groups</h3>
-    <ul>
-      <li *ngFor="let group of myGroups" (click)="selectGroup(group)">
-        {{ group.name }}
-      </li>
-    </ul>
-  </aside>
+  <main class="dashboard-container">
 
-  <main class="main-panel">
-    <div *ngIf="!selectedGroup" class="empty-state">
-      Select a group from the left to see its channels,
-      or <a routerLink="/groups">browse all groups</a> to request to join one.
-    </div>
+    <section class="welcome-section">
+      <h1>Dashboard</h1>
+      <p>Welcome to your chat application.</p>
+    </section>
 
-    <app-channel-list *ngIf="selectedGroup" [group]="selectedGroup"></app-channel-list>
+    <section class="dashboard-grid">
+
+      <div class="dashboard-card">
+        <h2>Groups</h2>
+        <p>Browse groups you can join and access their channels.</p>
+
+        <a
+          routerLink="/groups"
+          class="dashboard-button">
+          View Groups
+        </a>
+      </div>
+
+      <div class="dashboard-card">
+        <h2>My Channels</h2>
+        <p>Access the channels available to you.</p>
+
+        <a
+          routerLink="/groups"
+          class="dashboard-button">
+          View Channels
+        </a>
+      </div>
+
+      <div class="dashboard-card">
+        <h2>Profile</h2>
+        <p>View your account information and role.</p>
+
+        <a
+          routerLink="/profile"
+          class="dashboard-button">
+          View Profile
+        </a>
+      </div>
+
+    </section>
+
   </main>
 
-  <!-- shown only for super admin -->
-  <section class="admin-quick-panel" *ngIf="currentUser.role === 'superAdmin'">
-    <h4>Pending user creation requests</h4>
-    <p>{{ pendingRequestCount }} awaiting approval</p>
-    <a routerLink="/admin/users">Go to User Management</a>
-  </section>
-  
 </div>

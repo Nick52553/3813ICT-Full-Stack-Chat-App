@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "name": "Gaming Group",
+    "description": "A group for gaming discussion.",
+    "ageLimit": 18,
+    "adminIds": [3],
+    "memberIds": [2, 3]
+  },
+  {
+    "id": 2,
+    "name": "Study Group",
+    "description": "University study and discussion.",
+    "ageLimit": 17,
+    "adminIds": [3],
+    "memberIds": [2, 3]
+  }
+]

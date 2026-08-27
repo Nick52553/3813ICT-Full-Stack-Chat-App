@@ -1,25 +1,89 @@
-<div class="chat-window">
-  <h3>Chat</h3>
+<div class="chat-page">
 
-  <div class="messages">
-    <p *ngIf="messages.length === 0">
-      No messages yet.
-    </p>
+  <app-navbar></app-navbar>
 
-    <div *ngFor="let message of messages" class="message">
-      <strong>{{ message.username }}</strong>:
-      {{ message.text }}
-    </div>
+  <div class="chat-layout">
+
+    <main class="chat-main">
+
+      <header class="chat-header">
+
+        <div>
+          <h1># {{ channelName }}</h1>
+          <p>{{ groupName }}</p>
+        </div>
+
+        <a
+          [routerLink]="['/channels', groupId]"
+          class="back-button">
+          Back to Channels
+        </a>
+
+      </header>
+
+      <section class="messages">
+
+        <div class="system-message">
+          You joined the room.
+        </div>
+
+        <div
+          class="message"
+          *ngFor="let message of messages">
+
+          <div class="message-avatar">
+            {{ message.username.charAt(0) }}
+          </div>
+
+          <div class="message-content">
+
+            <div class="message-info">
+              <strong>{{ message.username }}</strong>
+              <span>{{ message.time }}</span>
+            </div>
+
+            <p>
+              {{ message.text }}
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <footer class="message-composer">
+
+        <button
+          type="button"
+          class="attachment-button"
+          title="Attach image">
+          📎
+        </button>
+
+        <input
+          type="text"
+          name="message"
+          [(ngModel)]="messageText"
+          (keyup.enter)="sendMessage()"
+          placeholder="Type a message..."
+        />
+
+        <button
+          type="button"
+          class="send-button"
+          (click)="sendMessage()">
+          Send
+        </button>
+
+      </footer>
+
+      <div class="chat-note">
+        PNG, JPG and GIF images under 2MB are supported.
+      </div>
+
+    </main>
+
   </div>
 
-  <div class="message-input">
-    <input
-      type="text"
-      placeholder="Type a message..."
-      [(ngModel)]="newMessage"
-      (keyup.enter)="sendMessage()"
-    />
-
-    <button (click)="sendMessage()">Send</button>
-  </div>
 </div>

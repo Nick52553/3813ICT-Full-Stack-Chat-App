@@ -1,18 +1,62 @@
-<p>channel-list works!</p>
-<div class="channel-list">
-  <div class="header">
-    <h3>{{ group.name }} — Channels</h3>
-    <button *ngIf="isGroupAdmin" (click)="openCreateChannel()">+ New Channel</button>
-    <a *ngIf="!isGroupAdmin" (click)="requestNewChannel()">Request a channel</a>
-  </div>
+<div class="channel-list-page">
 
-  <ul>
-    <li *ngFor="let channel of channels"
-        (click)="openChannel(channel)"
-        [class.active]="channel.id === activeChannelId">
-      # {{ channel.name }}
-    </li>
-  </ul>
+  <app-navbar></app-navbar>
 
-  <app-chat-window *ngIf="activeChannelId" [channelId]="activeChannelId"></app-chat-window>
+  <main class="channel-container">
+
+    <div class="page-header">
+
+      <div>
+        <h1>{{ groupName }}</h1>
+        <p>Select a channel to start chatting.</p>
+      </div>
+
+      <a
+        routerLink="/groups"
+        class="back-button">
+        Back to Groups
+      </a>
+
+    </div>
+
+    <div class="channels">
+
+      <div
+        class="channel-card"
+        *ngFor="let channel of channels">
+
+        <div class="channel-icon">
+          #
+        </div>
+
+        <div class="channel-content">
+
+          <h2>{{ channel.name }}</h2>
+
+          <p>
+            {{ channel.description }}
+          </p>
+
+          <span>
+            {{ channel.members }} members
+          </span>
+
+        </div>
+
+        <a
+          [routerLink]="[
+            '/chat',
+            groupId,
+            channel.id
+          ]"
+          class="open-button">
+          Open Chat
+        </a>
+
+      </div>
+
+    </div>
+
+  </main>
+
 </div>

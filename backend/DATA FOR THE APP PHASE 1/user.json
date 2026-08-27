@@ -1,14 +1,23 @@
 [
   {
     "id": 1,
-    "username": "allan",
+    "username": "Allan",
     "password": "allan123",
-    "role": "admin"
+    "age": 25,
+    "role": "superAdmin"
   },
   {
     "id": 2,
-    "username": "nick",
+    "username": "Nick",
     "password": "nick123",
+    "age": 21,
     "role": "user"
+  },
+  {
+    "id": 3,
+    "username": "Jordan",
+    "password": "jordan123",
+    "age": 23,
+    "role": "groupAdmin"
   }
 ]
