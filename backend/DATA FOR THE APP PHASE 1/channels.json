@@ -3,18 +3,40 @@
     "id": 1,
     "groupId": 1,
     "name": "General",
-    "description": "General discussion."
+    "description": "General gaming discussion.",
+    "memberIds": [
+      2,
+      3
+    ]
   },
   {
     "id": 2,
     "groupId": 1,
     "name": "Games",
-    "description": "Talk about games."
+    "description": "Talk about games.",
+    "memberIds": [
+      2,
+      3
+    ]
   },
   {
     "id": 3,
     "groupId": 2,
     "name": "Study Help",
-    "description": "Ask questions about study."
+    "description": "Ask study questions.",
+    "memberIds": [
+      2,
+      3
+    ]
+  },
+  {
+    "id": 4,
+    "groupId": 1,
+    "name": "golf",
+    "description": "golf is cool",
+    "memberIds": [
+      2,
+      3
+    ]
   }
 ]

@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "type": "channel",
+    "requesterId": 2,
+    "groupId": 1,
+    "targetUserId": null,
+    "name": "golf",
+    "description": "golf is cool",
+    "ageLimit": 0,
+    "reason": "",
+    "status": "approved",
+    "createdAt": "2026-08-27T06:42:42.312Z",
+    "reviewedAt": "2026-08-27T06:45:43.222Z",
+    "reviewedBy": 1
+  },
+  {
+    "id": 2,
+    "type": "group",
+    "requesterId": 2,
+    "groupId": null,
+    "targetUserId": null,
+    "name": "golfing",
+    "description": "golfingggggggggggggggggg",
+    "ageLimit": 18,
+    "reason": "",
+    "status": "pending",
+    "createdAt": "2026-08-27T06:44:22.819Z",
+    "reviewedAt": null,
+    "reviewedBy": null
+  }
+]

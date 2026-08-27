@@ -4,11 +4,31 @@
 
   <h1>Group Management</h1>
 
+  <!-- Success / Error messages -->
+
+  <p
+    *ngIf="message"
+    class="success-message">
+    {{ message }}
+  </p>
+
+  <p
+    *ngIf="error"
+    class="error-message">
+    {{ error }}
+  </p>
+
+
+  <!-- ========================================= -->
+  <!-- CREATE GROUP -->
+  <!-- ========================================= -->
+
   <section class="management-card">
 
     <h2>Create Group</h2>
 
-    <form (ngSubmit)="createGroup()">
+    <form
+      (ngSubmit)="createGroup()">
 
       <input
         type="text"
@@ -28,9 +48,10 @@
         name="ageLimit"
         [(ngModel)]="ageLimit"
         min="0"
-        placeholder="Age limit">
+        placeholder="Minimum age">
 
-      <button type="submit">
+      <button
+        type="submit">
         Create Group
       </button>
 
@@ -38,9 +59,14 @@
 
   </section>
 
+
+  <!-- ========================================= -->
+  <!-- ADD MEMBER -->
+  <!-- ========================================= -->
+
   <section class="management-card">
 
-    <h2>Assign User to Group</h2>
+    <h2>Add User to Group</h2>
 
     <select
       name="selectedGroupId"
@@ -60,6 +86,7 @@
 
     </select>
 
+
     <select
       name="selectedUserId"
       [(ngModel)]="selectedUserId">
@@ -78,6 +105,7 @@
 
     </select>
 
+
     <button
       type="button"
       (click)="addMember()">
@@ -88,9 +116,33 @@
 
   </section>
 
+
+  <!-- ========================================= -->
+  <!-- ASSIGN GROUP ADMIN -->
+  <!-- ========================================= -->
+
   <section class="management-card">
 
     <h2>Assign Group Admin</h2>
+
+    <select
+      name="selectedGroupIdAdmin"
+      [(ngModel)]="selectedGroupId">
+
+      <option [ngValue]="null">
+        Select Group
+      </option>
+
+      <option
+        *ngFor="let group of groups"
+        [ngValue]="group.id">
+
+        {{ group.name }}
+
+      </option>
+
+    </select>
+
 
     <select
       name="selectedAdminId"
@@ -110,6 +162,7 @@
 
     </select>
 
+
     <button
       type="button"
       (click)="assignAdmin()">
@@ -120,12 +173,137 @@
 
   </section>
 
-  <p *ngIf="message">
-    {{ message }}
-  </p>
 
-  <p *ngIf="error">
-    {{ error }}
-  </p>
+  <!-- ========================================= -->
+  <!-- PENDING REQUESTS -->
+  <!-- ========================================= -->
+
+  <section class="management-card">
+
+    <h2>Pending Requests</h2>
+
+    <p
+      *ngIf="pendingRequests.length === 0"
+      class="empty-message">
+
+      No pending requests.
+
+    </p>
+
+
+    <div
+      class="request-review"
+      *ngFor="let request of pendingRequests">
+
+
+      <!-- CHANNEL REQUEST -->
+
+      <div
+        *ngIf="request.type === 'channel'"
+        class="request-information">
+
+        <h3>
+          New Channel Request
+        </h3>
+
+        <p>
+          <strong>Channel:</strong>
+          {{ request.name }}
+        </p>
+
+        <p>
+          <strong>Group ID:</strong>
+          {{ request.groupId }}
+        </p>
+
+        <p
+          *ngIf="request.description">
+
+          <strong>Description:</strong>
+          {{ request.description }}
+
+        </p>
+
+        <p>
+          <strong>Requested by User ID:</strong>
+          {{ request.requesterId }}
+        </p>
+
+      </div>
+
+
+      <!-- BAN / REMOVAL REQUEST -->
+
+      <div
+        *ngIf="
+          request.type === 'ban' ||
+          request.type === 'groupRemoval'
+        "
+        class="request-information">
+
+        <h3>
+          User Removal Request
+        </h3>
+
+        <p>
+          <strong>User ID:</strong>
+          {{ request.targetUserId }}
+        </p>
+
+        <p>
+          <strong>Group ID:</strong>
+          {{ request.groupId }}
+        </p>
+
+        <p
+          *ngIf="request.reason">
+
+          <strong>Reason:</strong>
+          {{ request.reason }}
+
+        </p>
+
+        <p>
+          <strong>Requested by User ID:</strong>
+          {{ request.requesterId }}
+        </p>
+
+      </div>
+
+
+      <!-- ACCEPT / DENY -->
+
+      <div class="request-actions">
+
+        <button
+          type="button"
+          class="accept-button"
+          (click)="reviewRequest(
+            request.id,
+            'approved'
+          )">
+
+          Accept
+
+        </button>
+
+
+        <button
+          type="button"
+          class="deny-button"
+          (click)="reviewRequest(
+            request.id,
+            'denied'
+          )">
+
+          Deny
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
 
 </main>

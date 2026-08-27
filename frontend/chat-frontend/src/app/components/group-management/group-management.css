@@ -46,3 +46,29 @@
 .management-card button:hover, .create-card button:hover { background: var(--accent-dim); }
 
 .management-container > p, .create-card > p { font-family: var(--font-display); font-size: 0.82rem; margin-top: 1rem; }
+
+.success-message { padding: 0.75rem 0.9rem; margin-bottom: 1.1rem; border: 1px solid var(--signal); border-radius: var(--radius); color: var(--signal); background: var(--panel); font-family: var(--font-display); font-size: 0.68rem; }
+.error-message { padding: 0.75rem 0.9rem; margin-bottom: 1.1rem; border: 1px solid var(--danger); border-radius: var(--radius); color: var(--danger); background: var(--panel); font-family: var(--font-display); font-size: 0.68rem; }
+.empty-message { color: var(--text-muted); font-size: 0.82rem; }
+
+.request-review { display: flex; justify-content: space-between; align-items: center; gap: 1.25rem; padding: 1.1rem 0; border-top: 1px solid var(--border); }
+
+.request-information { flex: 1; }
+.request-information h3 { margin: 0 0 0.6rem; font-size: 0.82rem; }
+.request-information p { margin: 0.25rem 0; color: var(--text-muted); font-size: 0.75rem; }
+.request-information strong { color: var(--text); }
+
+.request-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.request-actions button { padding: 0.5rem 0.8rem; border-radius: var(--radius); font-family: var(--font-display); font-size: 0.63rem; text-transform: uppercase; cursor: pointer; }
+
+.accept-button { background: var(--accent); color: var(--bg); border: 1px solid var(--accent); }
+.accept-button:hover { background: var(--accent-dim); }
+
+.deny-button { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+.deny-button:hover { background: rgba(224, 100, 90, 0.08); }
+
+@media (max-width: 650px) {
+  .request-review { flex-direction: column; align-items: flex-start; }
+  .request-actions { width: 100%; }
+  .request-actions button { flex: 1; }
+}

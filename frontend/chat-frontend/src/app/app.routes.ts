@@ -11,6 +11,7 @@ import { ChannelManagement } from './components/channel-management/channel-manag
 import { ChatWindow } from './components/chat-window/chat-window';
 import { authGuard } from './auth.guard';
 import { superAdminGuard, groupAdminGuard} from './role.guard';
+import { Requests } from './components/requests/requests';
 
 export const routes: Routes = [
 
@@ -72,10 +73,15 @@ export const routes: Routes = [
     component: UserManagement,
     canActivate: [superAdminGuard]
   },
+  {
+    path: 'requests',
+    component: Requests,
+    canActivate: [authGuard]
+},  
 
   {
     path: '**',
-    redirectTo: 'dashboard'
+    redirectTo: 'dashboard' 
   }
 
 ];

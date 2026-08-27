@@ -6,6 +6,7 @@
 
     <main class="chat-main">
 
+      <!-- Chat Header -->
       <header class="chat-header">
 
         <div>
@@ -21,6 +22,12 @@
 
       </header>
 
+      <!-- Phase 1 Notice -->
+      <div class="phase-label">
+        PHASE 1 PROTOTYPE
+      </div>
+
+      <!-- Messages -->
       <section class="messages">
 
         <div class="system-message">
@@ -32,19 +39,37 @@
           *ngFor="let message of messages">
 
           <div class="message-avatar">
-            {{ message.username.charAt(0) }}
+            {{ message.username.charAt(0).toUpperCase() }}
           </div>
 
           <div class="message-content">
 
             <div class="message-info">
-              <strong>{{ message.username }}</strong>
-              <span>{{ message.time }}</span>
+
+              <strong>
+                {{ message.username }}
+              </strong>
+
+              <span>
+                {{ message.time }}
+              </span>
+
             </div>
 
             <p>
               {{ message.text }}
             </p>
+
+            <!-- Only show delete for your own messages -->
+            <button
+              *ngIf="message.username === currentUser.username"
+              type="button"
+              class="delete-message-button"
+              (click)="deleteMessage(message.id)">
+
+              Delete
+
+            </button>
 
           </div>
 
@@ -52,6 +77,7 @@
 
       </section>
 
+      <!-- Message Composer -->
       <footer class="message-composer">
 
         <button
@@ -73,7 +99,9 @@
           type="button"
           class="send-button"
           (click)="sendMessage()">
+
           Send
+
         </button>
 
       </footer>

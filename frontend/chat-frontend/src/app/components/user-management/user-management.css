@@ -1,48 +1,67 @@
-.management-container { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.75rem; }
-.management-container h1 { font-size: 1.2rem; margin-bottom: 1.5rem; }
+.user-management-page { min-height: 100vh; background: var(--bg); }
 
-.management-card, .create-card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  margin-bottom: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+.management-container { max-width: 900px; margin: 0 auto; padding: 2.625rem 1.75rem; }
+
+.page-header { display: flex; justify-content: space-between; align-items: center; gap: 1.25rem; margin-bottom: 1.75rem; }
+.page-header h1 { margin: 0 0 0.375rem; font-size: 1.375rem; text-transform: uppercase; }
+.page-header p { margin: 0; color: var(--text-muted); font-size: 0.8125rem; }
+
+.admin-badge { padding: 0.4375rem 0.6875rem; border: 1px solid var(--accent-dim); border-radius: var(--radius); color: var(--accent); background: rgba(242, 166, 75, 0.08); font-family: var(--font-display); font-size: 0.625rem; text-transform: uppercase; white-space: nowrap; }
+
+.management-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.25rem; }
+
+.card-heading { margin-bottom: 1.25rem; }
+.card-heading h2 { margin: 0 0 0.375rem; font-size: 0.95rem; text-transform: uppercase; }
+.card-heading p { margin: 0; color: var(--text-muted); font-size: 0.75rem; }
+
+.management-form { display: flex; flex-direction: column; gap: 1rem; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+.form-group { display: flex; flex-direction: column; gap: 0.4375rem; }
+.form-group label { color: var(--text-muted); font-family: var(--font-display); font-size: 0.625rem; text-transform: uppercase; }
+.form-group small { color: var(--text-muted); font-size: 0.6875rem; }
+
+.form-group input, .form-group select { width: 100%; padding: 0.625rem 0.75rem; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); }
+.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); }
+
+.primary-button { align-self: flex-start; padding: 0.625rem 0.9375rem; background: var(--accent); color: var(--bg); border: 1px solid var(--accent); border-radius: var(--radius); font-family: var(--font-display); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; }
+.primary-button:hover { background: var(--accent-dim); }
+
+.success-message, .error-message { padding: 0.75rem 0.9375rem; margin-bottom: 1.125rem; border-radius: var(--radius); background: var(--panel); font-family: var(--font-display); font-size: 0.6875rem; }
+.success-message { border: 1px solid var(--signal); color: var(--signal); }
+.error-message { border: 1px solid var(--danger); color: var(--danger); }
+
+.empty-message { padding: 1.125rem; text-align: center; color: var(--text-muted); border: 1px dashed var(--border); font-size: 0.75rem; }
+
+.request-review { display: flex; justify-content: space-between; gap: 1.25rem; padding: 1.125rem 0; border-top: 1px solid var(--border); }
+
+.request-information { flex: 1; }
+.request-information h3 { margin: 0 0 0.625rem; font-size: 0.875rem; }
+.request-information p { margin: 0.25rem 0; color: var(--text-muted); font-size: 0.75rem; }
+.request-information strong { color: var(--text); }
+
+.request-actions { display: flex; align-items: center; gap: 0.5rem; }
+
+.accept-button, .deny-button { padding: 0.5rem 0.75rem; border-radius: var(--radius); font-family: var(--font-display); font-size: 0.625rem; font-weight: 600; text-transform: uppercase; cursor: pointer; }
+.accept-button { background: var(--accent); color: var(--bg); border: 1px solid var(--accent); }
+.deny-button { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+.accept-button:hover { background: var(--accent-dim); }
+.deny-button:hover { background: rgba(224, 100, 90, 0.08); }
+
+.user-row { display: flex; justify-content: space-between; align-items: center; gap: 1.25rem; padding: 0.875rem 0; border-top: 1px solid var(--border); }
+
+.user-information strong { display: block; color: var(--text); font-size: 0.875rem; }
+.user-information span { color: var(--text-muted); font-size: 0.6875rem; }
+
+.user-meta { display: flex; align-items: center; gap: 0.9375rem; color: var(--text-muted); font-size: 0.6875rem; }
+
+.role-badge { padding: 0.25rem 0.5rem; border: 1px solid var(--accent-dim); border-radius: var(--radius); color: var(--accent); font-family: var(--font-display); font-size: 0.5625rem; text-transform: uppercase; }
+
+@media (max-width: 650px) {
+  .page-header { flex-direction: column; align-items: flex-start; }
+  .form-row { grid-template-columns: 1fr; }
+  .request-review, .user-row { flex-direction: column; align-items: flex-start; }
+  .request-actions { width: 100%; }
+  .accept-button, .deny-button { flex: 1; }
 }
-
-.management-card h2, .create-card h2 { font-size: 0.95rem; margin: 0; }
-
-.management-card form, .create-card form { display: flex; flex-direction: column; gap: 0.85rem; }
-
-.management-card input, .management-card select, .management-card textarea,
-.create-card input, .create-card select {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.65rem 0.85rem;
-  color: var(--text);
-  font-size: 0.88rem;
-  font-family: var(--font-body);
-}
-.management-card input:focus, .management-card select:focus, .management-card textarea:focus,
-.create-card input:focus, .create-card select:focus { outline: none; border-color: var(--accent); }
-
-.management-card textarea { resize: vertical; min-height: 70px; }
-
-.management-card button, .create-card button {
-  align-self: flex-start;
-  background: var(--accent);
-  color: #14110d;
-  border: none;
-  border-radius: var(--radius);
-  padding: 0.6rem 1.1rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.management-card button:hover, .create-card button:hover { background: var(--accent-dim); }
-
-.management-container > p, .create-card > p { font-family: var(--font-display); font-size: 0.82rem; margin-top: 1rem; }

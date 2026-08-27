@@ -26,25 +26,35 @@ export class ChatWindow implements OnInit {
 
   messageText = '';
 
+  currentUser: any = JSON.parse(
+    localStorage.getItem('currentUser') ||
+    '{"username":"User","role":"user"}'
+  );
+
   messages = [
     {
+      id: 1,
       username: 'Allan',
       text: 'Welcome everyone to the General channel!',
       time: '10:32 AM'
     },
     {
+      id: 2,
       username: 'Nick',
       text: 'Thanks! Looking forward to chatting.',
       time: '10:34 AM'
     },
     {
+      id: 3,
       username: 'Jordan',
       text: 'Has anyone played the new update yet?',
       time: '10:36 AM'
     }
   ];
 
-  constructor(private route: ActivatedRoute) {}
+  constructor(
+    private route: ActivatedRoute
+  ) {}
 
   ngOnInit() {
 
@@ -84,20 +94,37 @@ export class ChatWindow implements OnInit {
       return;
     }
 
-    const currentUser = JSON.parse(
-      localStorage.getItem('currentUser') ||
-      '{"username":"User"}'
-    );
-
-    this.messages.push({
-      username: currentUser.username,
+    const newMessage = {
+      id: Date.now(),
+      username: this.currentUser.username,
       text: text,
       time: new Date().toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit'
       })
-    });
+    };
+
+    this.messages.push(newMessage);
 
     this.messageText = '';
+  }
+
+  deleteMessage(messageId: number) {
+
+    const message = this.messages.find(
+      m => m.id === messageId
+    );
+
+    if (!message) {
+      return;
+    }
+
+    if (message.username !== this.currentUser.username) {
+      return;
+    }
+
+    this.messages = this.messages.filter(
+      m => m.id !== messageId
+    );
   }
 }

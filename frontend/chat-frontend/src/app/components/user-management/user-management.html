@@ -1,63 +1,301 @@
-<app-navbar></app-navbar>
+<div class="user-management-page">
 
-<section class="create-card">
+  <app-navbar></app-navbar>
 
-  <h2>Create User</h2>
+  <main class="management-container">
 
-  <form (ngSubmit)="createUser()">
+    <!-- Page heading -->
+    <div class="page-header">
+      <div>
+        <h1>User Management</h1>
+        <p>
+          Manage users and review requests submitted to the system.
+        </p>
+      </div>
 
-    <input
-      type="text"
-      name="username"
-      [(ngModel)]="username"
-      placeholder="Username"
-      required>
-
-    <input
-      type="password"
-      name="password"
-      [(ngModel)]="password"
-      placeholder="Password"
-      required>
-
-    <input
-      type="number"
-      name="age"
-      [(ngModel)]="age"
-      min="1"
-      placeholder="Age"
-      required>
-
-    <select
-      name="role"
-      [(ngModel)]="role">
-
-      <option value="user">
-        Regular User
-      </option>
-
-      <option value="groupAdmin">
-        Group Admin
-      </option>
-
-      <option value="superAdmin">
+      <span class="admin-badge">
         Super Admin
-      </option>
+      </span>
+    </div>
 
-    </select>
 
-    <button type="submit">
-      Create User
-    </button>
+    <!-- Status messages -->
+    <p
+      *ngIf="message"
+      class="success-message">
+      {{ message }}
+    </p>
 
-  </form>
+    <p
+      *ngIf="error"
+      class="error-message">
+      {{ error }}
+    </p>
 
-  <p *ngIf="message">
-    {{ message }}
-  </p>
 
-  <p *ngIf="error">
-    {{ error }}
-  </p>
+    <!-- Create User -->
+    <section class="management-card">
 
-</section>
+      <div class="card-heading">
+        <h2>Create User</h2>
+        <p>
+          Add a new user to the system.
+        </p>
+      </div>
+
+      <form
+        (ngSubmit)="createUser()"
+        class="management-form">
+
+        <div class="form-group">
+
+          <label for="username">
+            Username
+          </label>
+
+          <input
+            id="username"
+            type="text"
+            name="username"
+            [(ngModel)]="username"
+            placeholder="Enter username"
+            required>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="password">
+            Password
+          </label>
+
+          <input
+            id="password"
+            type="password"
+            name="password"
+            [(ngModel)]="password"
+            placeholder="Enter password"
+            required>
+
+          <small>
+            Minimum 8 characters with at least 1 uppercase letter.
+          </small>
+
+        </div>
+
+
+        <div class="form-row">
+
+          <div class="form-group">
+
+            <label for="age">
+              Age
+            </label>
+
+            <input
+              id="age"
+              type="number"
+              name="age"
+              [(ngModel)]="age"
+              min="1"
+              placeholder="Age"
+              required>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="role">
+              Account Role
+            </label>
+
+            <select
+              id="role"
+              name="role"
+              [(ngModel)]="role">
+
+              <option value="user">
+                Regular User
+              </option>
+
+              <option value="groupAdmin">
+                Group Admin
+              </option>
+
+              <option value="superAdmin">
+                Super Admin
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <button
+          type="submit"
+          class="primary-button">
+
+          Create User
+
+        </button>
+
+      </form>
+
+    </section>
+
+
+    <!-- Pending Group Requests -->
+    <section class="management-card">
+
+      <div class="card-heading">
+
+        <h2>Pending Group Requests</h2>
+
+        <p>
+          Review requests submitted by regular users.
+        </p>
+
+      </div>
+
+
+      <div
+        *ngIf="pendingGroupRequests.length === 0"
+        class="empty-message">
+
+        No pending group requests.
+
+      </div>
+
+
+      <div
+        class="request-review"
+        *ngFor="let request of pendingGroupRequests">
+
+        <div class="request-information">
+
+          <h3>
+            {{ request.name }}
+          </h3>
+
+          <p>
+            <strong>Description:</strong>
+            {{ request.description || 'No description provided.' }}
+          </p>
+
+          <p>
+            <strong>Minimum Age:</strong>
+            {{ request.ageLimit || 'No age limit' }}
+          </p>
+
+          <p>
+            <strong>Requested by User ID:</strong>
+            {{ request.requesterId }}
+          </p>
+
+          <p>
+            <strong>Status:</strong>
+            Pending Review
+          </p>
+
+        </div>
+
+
+        <div class="request-actions">
+
+          <button
+            type="button"
+            class="accept-button"
+            (click)="reviewGroupRequest(
+              request.id,
+              'approved'
+            )">
+
+            Accept
+
+          </button>
+
+
+          <button
+            type="button"
+            class="deny-button"
+            (click)="reviewGroupRequest(
+              request.id,
+              'denied'
+            )">
+
+            Deny
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- Existing Users -->
+    <section class="management-card">
+
+      <div class="card-heading">
+
+        <h2>System Users</h2>
+
+        <p>
+          Current users registered in the system.
+        </p>
+
+      </div>
+
+
+      <div
+        *ngIf="users.length === 0"
+        class="empty-message">
+
+        No users found.
+
+      </div>
+
+
+      <div
+        class="user-row"
+        *ngFor="let user of users">
+
+        <div class="user-information">
+
+          <strong>
+            {{ user.username }}
+          </strong>
+
+          <span>
+            ID: {{ user.id }}
+          </span>
+
+        </div>
+
+        <div class="user-meta">
+
+          <span>
+            Age {{ user.age }}
+          </span>
+
+          <span
+            class="role-badge">
+
+            {{ user.role }}
+
+          </span>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>

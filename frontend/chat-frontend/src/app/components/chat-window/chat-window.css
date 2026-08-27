@@ -46,3 +46,11 @@
 .send-button:hover { background: var(--accent-dim); }
 
 .chat-note { text-align: center; font-family: var(--font-display); font-size: 0.65rem; color: var(--text-muted); padding: 0.75rem 0 1.25rem; }
+
+.delete-message-button { margin-top: 8px; background: transparent; border: 1px solid var(--border); border-radius: var(--radius); color: var(--danger); padding: 4px 8px; font-family: var(--font-display); font-size: 9px; text-transform: uppercase; cursor: pointer; }
+.delete-message-button:hover { border-color: var(--danger); background: rgba(224, 100, 90, 0.08); }
+
+.back-button { padding: 8px 12px; background: transparent; border: 1px solid var(--border); border-radius: var(--radius); color: var(--accent); font-family: var(--font-display); font-size: 10px; text-transform: uppercase; }
+.back-button:hover { background: var(--panel-raised); border-color: var(--accent); }
+
+.phase-label { align-self: flex-start; margin: 15px 0 5px; padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-muted); font-family: var(--font-display); font-size: 9px; letter-spacing: 0.08em; }

@@ -1,0 +1,254 @@
+<div class="requests-page">
+
+  <app-navbar></app-navbar>
+
+  <main class="requests-container">
+
+    <div class="page-header">
+
+      <div>
+        <h1>Requests</h1>
+
+        <p>
+          Submit requests for administrators to review.
+        </p>
+      </div>
+
+    </div>
+
+    <section class="request-card">
+
+      <h2>Request Type</h2>
+
+      <div class="request-tabs">
+
+        <button
+          type="button"
+          [class.active]="requestType === 'group'"
+          (click)="requestType = 'group'">
+
+          New Group
+
+        </button>
+
+        <button
+          type="button"
+          [class.active]="requestType === 'channel'"
+          (click)="requestType = 'channel'">
+
+          New Channel
+
+        </button>
+
+        <button
+          type="button"
+          [class.active]="requestType === 'ban'"
+          (click)="requestType = 'ban'">
+
+          Request Removal
+
+        </button>
+
+      </div>
+
+    </section>
+
+    <!-- GROUP REQUEST -->
+
+    <section
+      class="request-card"
+      *ngIf="requestType === 'group'">
+
+      <h2>Request a New Group</h2>
+
+      <p class="description">
+        Your request will be reviewed by the Super Admin.
+      </p>
+
+      <form (ngSubmit)="submitRequest()">
+
+        <label>Group Name</label>
+
+        <input
+          type="text"
+          name="groupName"
+          [(ngModel)]="groupName"
+          placeholder="Enter group name"
+          required>
+
+        <label>Description</label>
+
+        <textarea
+          name="groupDescription"
+          [(ngModel)]="groupDescription"
+          placeholder="Describe the group">
+        </textarea>
+
+        <label>Minimum Age</label>
+
+        <input
+          type="number"
+          name="groupAgeLimit"
+          [(ngModel)]="groupAgeLimit"
+          min="0">
+
+        <button type="submit">
+          Submit Group Request
+        </button>
+
+      </form>
+
+    </section>
+
+    <!-- CHANNEL REQUEST -->
+
+    <section
+      class="request-card"
+      *ngIf="requestType === 'channel'">
+
+      <h2>Request a New Channel</h2>
+
+      <p class="description">
+        Your request will be reviewed by a Group Admin.
+      </p>
+
+      <form (ngSubmit)="submitRequest()">
+
+        <label>Group</label>
+
+        <select
+          name="selectedGroup"
+          [(ngModel)]="selectedGroup"
+          required>
+
+          <option value="">
+            Select a group
+          </option>
+
+          <option
+            *ngFor="let group of groups"
+            [value]="group.id">
+
+            {{ group.name }}
+
+          </option>
+
+        </select>
+
+        <label>Channel Name</label>
+
+        <input
+          type="text"
+          name="channelName"
+          [(ngModel)]="channelName"
+          placeholder="Enter channel name"
+          required>
+
+        <label>Description</label>
+
+        <textarea
+          name="channelDescription"
+          [(ngModel)]="channelDescription"
+          placeholder="Describe the channel">
+        </textarea>
+
+        <button type="submit">
+          Submit Channel Request
+        </button>
+
+      </form>
+
+    </section>
+
+    <!-- BAN REQUEST -->
+
+    <section
+      class="request-card"
+      *ngIf="requestType === 'ban'">
+
+      <h2>Request User Removal</h2>
+
+      <p class="description">
+        A Group Admin will review this request.
+      </p>
+
+      <form (ngSubmit)="submitRequest()">
+
+        <label>Group</label>
+
+        <select
+          name="selectedGroup"
+          [(ngModel)]="selectedGroup"
+          required>
+
+          <option value="">
+            Select a group
+          </option>
+
+          <option
+            *ngFor="let group of groups"
+            [value]="group.id">
+
+            {{ group.name }}
+
+          </option>
+
+        </select>
+
+        <label>User</label>
+
+        <select
+          name="selectedUser"
+          [(ngModel)]="selectedUser"
+          required>
+
+          <option value="">
+            Select a user
+          </option>
+
+          <option
+            *ngFor="let user of users"
+            [value]="user.id">
+
+            {{ user.username }}
+
+          </option>
+
+        </select>
+
+        <label>Reason</label>
+
+        <textarea
+          name="banReason"
+          [(ngModel)]="banReason"
+          placeholder="Explain the reason for the request"
+          required>
+        </textarea>
+
+        <button type="submit">
+          Submit Removal Request
+        </button>
+
+      </form>
+
+    </section>
+
+    <div
+      *ngIf="message"
+      class="success-message">
+
+      {{ message }}
+
+    </div>
+
+    <div
+      *ngIf="error"
+      class="error-message">
+
+      {{ error }}
+
+    </div>
+
+  </main>
+
+</div>

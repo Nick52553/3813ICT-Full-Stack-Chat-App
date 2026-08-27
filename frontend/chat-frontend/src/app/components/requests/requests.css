@@ -1,0 +1,27 @@
+.requests-page { min-height: 100vh; background: var(--bg); }
+.requests-container { max-width: 800px; margin: 0 auto; padding: 2.6rem 1.75rem; }
+
+.page-header { margin-bottom: 1.5rem; }
+.page-header h1 { margin: 0 0 0.4rem; font-size: 1.35rem; text-transform: uppercase; }
+.page-header p { margin: 0; color: var(--text-muted); }
+
+.request-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.1rem; }
+.request-card h2 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+.description { color: var(--text-muted); font-size: 0.82rem; margin-bottom: 1.25rem; }
+
+.request-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.request-tabs button { background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.55rem 0.8rem; font-family: var(--font-display); font-size: 0.63rem; text-transform: uppercase; }
+.request-tabs button:hover { color: var(--accent); border-color: var(--accent); }
+.request-tabs button.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+.request-card form { display: flex; flex-direction: column; gap: 0.6rem; }
+.request-card label { color: var(--text-muted); font-family: var(--font-display); font-size: 0.63rem; text-transform: uppercase; margin-top: 0.3rem; }
+
+.request-card input, .request-card select, .request-card textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 0.6rem 0.75rem; font-size: 0.88rem; }
+.request-card textarea { min-height: 90px; resize: vertical; }
+.request-card input:focus, .request-card select:focus, .request-card textarea:focus { outline: none; border-color: var(--accent); }
+
+.request-card form button { align-self: flex-start; margin-top: 0.5rem; background: var(--accent); color: var(--bg); border: 1px solid var(--accent); border-radius: var(--radius); padding: 0.6rem 0.9rem; font-family: var(--font-display); font-size: 0.63rem; font-weight: 700; text-transform: uppercase; }
+.request-card form button:hover { background: var(--accent-dim); }
+
+.success-message { padding: 0.85rem 1rem; border: 1px solid var(--signal); border-radius: var(--radius); color: var(--signal); background: var(--panel); font-family: var(--font-display); font-size: 0.68rem; }

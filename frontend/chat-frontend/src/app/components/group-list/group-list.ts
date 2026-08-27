@@ -19,6 +19,13 @@ export class GroupList implements OnInit {
 
   groups: any[] = [];
 
+  currentUser: any = JSON.parse(
+    localStorage.getItem('currentUser') ||
+    '{"id":0,"username":"User","role":"user"}'
+  );
+
+  message = '';
+
   constructor(
     private http: HttpClient
   ) {}
@@ -38,12 +45,37 @@ export class GroupList implements OnInit {
       },
 
       error: error => {
-        console.error(
-          'Could not load groups:',
-          error
-        );
+        console.error('Could not load groups:', error);
       }
 
     });
+
   }
+
+  isMember(group: any): boolean {
+
+    return Array.isArray(group.memberIds) &&
+      group.memberIds.includes(this.currentUser.id);
+
+  }
+
+  isAdmin(group: any): boolean {
+
+    return Array.isArray(group.adminIds) &&
+      group.adminIds.includes(this.currentUser.id);
+
+  }
+
+  requestToJoin(group: any) {
+
+    if (this.isMember(group)) {
+      return;
+    }
+
+    this.message =
+      `Your request to join "${group.name}" has been submitted.`;
+
+   
+  }
+
 }

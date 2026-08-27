@@ -27,17 +27,9 @@
   },
   {
     "id": 3,
-    "name": "hello",
-    "description": "hell1111111",
-    "ageLimit": 19,
-    "adminIds": [],
-    "memberIds": []
-  },
-  {
-    "id": 4,
-    "name": "kitty",
-    "description": "dogs are better",
-    "ageLimit": 3,
+    "name": "batting",
+    "description": "batting",
+    "ageLimit": 18,
     "adminIds": [],
     "memberIds": []
   }
