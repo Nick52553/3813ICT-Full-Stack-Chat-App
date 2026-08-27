@@ -1,23 +1,49 @@
+<div class="login-container">
 
-<!--Login Page   I ADDED THIS :)-->
-
-
-<div class="login-page">
   <div class="login-card">
-    <h1 class="app-name">Fabulari</h1>
 
-    <form> <!-- TODO: bind (ngSubmit)="onLogin()" + reactive/template form -->
-      <label for="username">Username</label>
-      <input id="username" type="text" placeholder="Enter username" />
+    <h1>Chat Application</h1>
 
-      <label for="password">Password</label>
-      <input id="password" type="password" placeholder="Enter password" />
+    <h2>Login</h2>
 
-      <div class="error-message" *ngIf="loginFailed">
-        Invalid username or password.
+    <form (ngSubmit)="login()">
+
+      <div class="form-group">
+        <label for="username">Username</label>
+
+        <input
+          id="username"
+          type="text"
+          name="username"
+          [(ngModel)]="username"
+          required
+          placeholder="Enter username"
+        />
       </div>
 
-      <button type="submit">Log In</button>
+      <div class="form-group">
+        <label for="password">Password</label>
+
+        <input
+          id="password"
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          required
+          placeholder="Enter password"
+        />
+      </div>
+
+      <button type="submit">
+        Login
+      </button>
+
+      <p *ngIf="loginFailed" class="error">
+        Invalid username or password.
+      </p>
+
     </form>
+
   </div>
+
 </div>
