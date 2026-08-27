@@ -1,0 +1,46 @@
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1.5rem;
+  background: #16171c;
+  color: #fff;
+}
+
+.brand { font-weight: 700; font-size: 1.1rem; }
+
+.nav-links {
+  display: flex;
+  gap: 1.2rem;
+  list-style: none;
+}
+
+.nav-links a { color: #ccc; text-decoration: none; }
+.nav-links a:hover { color: #fff; }
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #777;
+}
+.status-dot.online { background: #43b581; }
+
+button {
+  background: transparent;
+  border: 1px solid #555;
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+}
+
+/* collapse to hamburger below 768px */
+@media (max-width: 768px) {
+  .nav-links { display: none; } /* TODO: replace with toggled hamburger menu */
+}

@@ -1,1 +1,25 @@
-<p>chat-window works!</p>
+<div class="chat-window">
+  <h3>Chat</h3>
+
+  <div class="messages">
+    <p *ngIf="messages.length === 0">
+      No messages yet.
+    </p>
+
+    <div *ngFor="let message of messages" class="message">
+      <strong>{{ message.username }}</strong>:
+      {{ message.text }}
+    </div>
+  </div>
+
+  <div class="message-input">
+    <input
+      type="text"
+      placeholder="Type a message..."
+      [(ngModel)]="newMessage"
+      (keyup.enter)="sendMessage()"
+    />
+
+    <button (click)="sendMessage()">Send</button>
+  </div>
+</div>
