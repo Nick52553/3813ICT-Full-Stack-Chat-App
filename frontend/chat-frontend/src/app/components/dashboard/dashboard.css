@@ -1,42 +1,52 @@
-.dashboard {
+.dashboard-page { min-height: 100vh; background: var(--bg); }
+
+.dashboard-container { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.75rem; }
+
+.welcome-section h1 { font-size: 1.4rem; margin: 0 0 0.4rem; }
+.welcome-section p { color: var(--text-muted); margin: 0 0 2.5rem; }
+
+.dashboard-grid {
   display: grid;
-  grid-template-columns: 220px 1fr;
-  min-height: calc(100vh - 56px);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
 }
 
-.sidebar {
-  background: #22232a;
-  color: #fff;
-  padding: 1rem;
-}
-
-.sidebar li {
-  padding: 0.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  list-style: none;
-}
-.sidebar li:hover { background: #2f3038; }
-
-.main-panel {
+.dashboard-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
-.empty-state {
-  color: #888;
-  text-align: center;
-  margin-top: 4rem;
+.dashboard-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--accent-dim);
+  transition: background 0.15s ease;
 }
 
-.admin-quick-panel {
-  grid-column: 1 / -1;
-  background: #fff3cd;
-  padding: 1rem;
-  border-top: 1px solid #e0c46c;
-}
+.dashboard-card:hover { border-color: var(--accent-dim); transform: translateY(-2px); }
+.dashboard-card:hover::before { background: var(--accent); }
 
-/* stack sidebar above content on mobile */
-@media (max-width: 768px) {
-  .dashboard { grid-template-columns: 1fr; }
-  .sidebar { display: flex; overflow-x: auto; }
+.dashboard-card h2 { font-size: 0.95rem; margin: 0 0 0.5rem; }
+.dashboard-card p { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 1.25rem; }
+
+.dashboard-button {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.9rem;
+  transition: all 0.15s ease;
 }
+.dashboard-button:hover { background: var(--accent); color: #14110d; }

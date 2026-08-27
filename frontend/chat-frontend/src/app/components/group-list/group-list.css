@@ -1,37 +1,56 @@
-.group-list-page { padding: 1.5rem; }
+.group-list-page { min-height: 100vh; background: var(--bg); }
+.group-container { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.75rem; }
 
-.sub { color: #777; margin-bottom: 1.5rem; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; }
+.page-header h1 { font-size: 1.3rem; margin: 0 0 0.35rem; }
+.page-header p { color: var(--text-muted); margin: 0; font-size: 0.9rem; }
 
-.group-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+.groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
+
+.group-card { display: flex; gap: 1rem; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+
+.group-icon {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--accent);
+  background: repeating-conic-gradient(from 0deg, var(--border) 0deg 4deg, transparent 4deg 30deg);
+}
+
+.group-content h2 { font-size: 1rem; margin: 0 0 0.35rem; }
+.group-content > p { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 0.75rem; }
+
+.group-stats {
+  display: flex;
   gap: 1rem;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
 }
 
-.group-card {
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 1rem;
-}
+.group-actions { display: flex; gap: 0.6rem; }
 
-.age-badge {
-  display: inline-block;
-  font-size: 0.75rem;
-  background: #eee;
-  border-radius: 4px;
-  padding: 0.15rem 0.4rem;
-  margin: 0.5rem 0;
-}
-
-button {
-  width: 100%;
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: none;
-  background: #5865f2;
-  color: #fff;
+.primary-button, .secondary-button, .open-button, .back-button {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius);
+  transition: all 0.15s ease;
+  border: 1px solid var(--accent-dim);
   cursor: pointer;
 }
-
-.pending { color: #d99a2b; }
-.member { color: #43b581; }
+.primary-button, .open-button { background: var(--accent); color: #14110d; border-color: var(--accent); }
+.primary-button:hover, .open-button:hover { background: var(--accent-dim); }
+.secondary-button, .back-button { background: transparent; color: var(--accent); }
+.secondary-button:hover, .back-button:hover { background: var(--panel-raised); }

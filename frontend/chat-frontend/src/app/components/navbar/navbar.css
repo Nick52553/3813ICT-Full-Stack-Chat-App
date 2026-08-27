@@ -2,45 +2,69 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.8rem 1.5rem;
-  background: #16171c;
-  color: #fff;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0.85rem 1.75rem;
+  font-family: var(--font-display);
 }
 
-.brand { font-weight: 700; font-size: 1.1rem; }
+.navbar-left { display: flex; align-items: center; gap: 1.75rem; }
 
-.nav-links {
-  display: flex;
-  gap: 1.2rem;
-  list-style: none;
+.navbar .logo {
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  padding-right: 1.5rem;
+  border-right: 1px solid var(--border);
 }
 
-.nav-links a { color: #ccc; text-decoration: none; }
-.nav-links a:hover { color: #fff; }
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+.navbar-left a {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color 0.15s ease;
 }
+.navbar-left a:hover { color: var(--text); }
+
+.navbar-right { display: flex; align-items: center; gap: 0.9rem; }
 
 .status-dot {
-  width: 8px; height: 8px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: #777;
+  background: var(--text-muted);
 }
-.status-dot.online { background: #43b581; }
 
-button {
+.status-dot.online {
+  background: var(--signal);
+  animation: pulse-signal 2s infinite;
+}
+
+@keyframes pulse-signal {
+  0% { box-shadow: 0 0 0 0 rgba(111, 207, 151, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(111, 207, 151, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(111, 207, 151, 0); }
+}
+
+.username {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.navbar-right button {
   background: transparent;
-  border: 1px solid #555;
-  color: #fff;
-  border-radius: 6px;
-  padding: 0.3rem 0.7rem;
-  cursor: pointer;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--radius);
+  transition: all 0.15s ease;
 }
-
-/* collapse to hamburger below 768px */
-@media (max-width: 768px) {
-  .nav-links { display: none; } /* TODO: replace with toggled hamburger menu */
-}
+.navbar-right button:hover { border-color: var(--danger); color: var(--danger); }

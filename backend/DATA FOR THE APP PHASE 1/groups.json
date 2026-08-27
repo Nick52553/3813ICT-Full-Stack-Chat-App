@@ -32,5 +32,13 @@
     "ageLimit": 19,
     "adminIds": [],
     "memberIds": []
+  },
+  {
+    "id": 4,
+    "name": "kitty",
+    "description": "dogs are better",
+    "ageLimit": 3,
+    "adminIds": [],
+    "memberIds": []
   }
 ]

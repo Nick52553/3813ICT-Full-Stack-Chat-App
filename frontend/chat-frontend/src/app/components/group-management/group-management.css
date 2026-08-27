@@ -1,36 +1,48 @@
-.group-management { padding: 1.5rem; max-width: 700px; }
+.management-container { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.75rem; }
+.management-container h1 { font-size: 1.2rem; margin-bottom: 1.5rem; }
 
-.note { color: #888; font-size: 0.85rem; margin-bottom: 1rem; }
-
-section { margin-bottom: 2rem; }
-
-.metadata { display: flex; align-items: center; gap: 0.6rem; }
-.metadata input { width: 80px; padding: 0.3rem; }
-
-.request-row, .member-row {
+.management-card, .create-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.4rem 0;
-  border-bottom: 1px solid #eee;
+  flex-direction: column;
+  gap: 0.85rem;
 }
 
-.request-row span, .member-row span { flex: 1; }
+.management-card h2, .create-card h2 { font-size: 0.95rem; margin: 0; }
 
-button {
-  padding: 0.35rem 0.7rem;
-  border-radius: 6px;
+.management-card form, .create-card form { display: flex; flex-direction: column; gap: 0.85rem; }
+
+.management-card input, .management-card select, .management-card textarea,
+.create-card input, .create-card select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.85rem;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: var(--font-body);
+}
+.management-card input:focus, .management-card select:focus, .management-card textarea:focus,
+.create-card input:focus, .create-card select:focus { outline: none; border-color: var(--accent); }
+
+.management-card textarea { resize: vertical; min-height: 70px; }
+
+.management-card button, .create-card button {
+  align-self: flex-start;
+  background: var(--accent);
+  color: #14110d;
   border: none;
-  cursor: pointer;
-  background: #5865f2;
-  color: #fff;
+  border-radius: var(--radius);
+  padding: 0.6rem 1.1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
+.management-card button:hover, .create-card button:hover { background: var(--accent-dim); }
 
-.danger { background: #f04747; }
-.danger-outline {
-  background: transparent;
-  border: 1px solid #f04747;
-  color: #f04747;
-}
-
-.empty { color: #999; }
+.management-container > p, .create-card > p { font-family: var(--font-display); font-size: 0.82rem; margin-top: 1rem; }

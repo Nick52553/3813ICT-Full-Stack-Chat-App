@@ -1,63 +1,75 @@
 .login-container {
   min-height: 100vh;
   display: flex;
-  justify-content: center;
   align-items: center;
-  background: #f4f4f4;
+  justify-content: center;
+  background: var(--bg);
+  background-image: radial-gradient(circle at 50% 0%, rgba(242,166,75,0.07), transparent 60%);
+  padding: 1.5rem;
 }
 
 .login-card {
-  width: 400px;
-  padding: 30px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 380px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem 2.25rem;
+  position: relative;
 }
 
-.login-card h1 {
-  text-align: center;
-  margin-bottom: 10px;
+.login-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent), var(--accent-dim));
 }
 
+.login-card h1 { font-size: 1.1rem; text-align: center; margin: 0 0 0.35rem; color: var(--accent); }
 .login-card h2 {
+  font-size: 0.75rem;
   text-align: center;
-  margin-bottom: 25px;
+  color: var(--text-muted);
+  margin: 0 0 2rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
-
+.form-group { margin-bottom: 1.25rem; }
 .form-group label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
 }
 
 .form-group input {
   width: 100%;
-  box-sizing: border-box;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.85rem;
+  color: var(--text);
+  font-size: 0.9rem;
 }
+.form-group input:focus { border-color: var(--accent); outline: none; }
 
-button {
+.login-card button {
   width: 100%;
-  padding: 12px;
+  background: var(--accent);
+  color: #14110d;
   border: none;
-  border-radius: 5px;
-  background: #333;
-  color: white;
-  cursor: pointer;
+  border-radius: var(--radius);
+  padding: 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 0.5rem;
 }
-
-button:hover {
-  background: #555;
-}
-
-.error {
-  margin-top: 15px;
-  color: red;
-  text-align: center;
-}
+.login-card button:hover { background: var(--accent-dim); }
+.login-card .error { text-align: center; margin-top: 1rem; }
