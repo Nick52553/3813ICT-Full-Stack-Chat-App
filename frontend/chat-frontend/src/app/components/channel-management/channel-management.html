@@ -1,21 +1,111 @@
-<p>channel-management works!</p>
-<div class="channel-management">
-  <div class="create-row">
-    <input type="text" placeholder="New channel name" [(ngModel)]="newChannelName" />
-    <button (click)="createChannel()">Create</button>
-  </div>
+<app-navbar></app-navbar>
 
-  <div class="channel-row" *ngFor="let channel of group.channels">
-    <span># {{ channel.name }}</span>
-    <button (click)="removeChannel(channel)" class="danger">Remove</button>
-  </div>
+<main class="management-container">
 
-  <div class="channel-requests" *ngIf="pendingChannelRequests.length">
-    <h4>Channel requests from users</h4>
-    <div class="request-row" *ngFor="let req of pendingChannelRequests">
-      <span>"{{ req.name }}" — requested by {{ req.requestedBy }}</span>
-      <button (click)="approveChannelRequest(req)">Approve</button>
-      <button (click)="denyChannelRequest(req)" class="danger">Deny</button>
-    </div>
-  </div>
-</div>
+  <h1>Channel Management</h1>
+
+  <section class="management-card">
+
+    <h2>Create Channel</h2>
+
+    <form (ngSubmit)="createChannel()">
+
+      <select
+        name="groupId"
+        [(ngModel)]="groupId"
+        required>
+
+        <option [ngValue]="null">
+          Select Group
+        </option>
+
+        <option
+          *ngFor="let group of groups"
+          [ngValue]="group.id">
+
+          {{ group.name }}
+
+        </option>
+
+      </select>
+
+      <input
+        type="text"
+        name="channelName"
+        [(ngModel)]="channelName"
+        placeholder="Channel name"
+        required>
+
+      <textarea
+        name="description"
+        [(ngModel)]="description"
+        placeholder="Channel description">
+      </textarea>
+
+      <button type="submit">
+        Create Channel
+      </button>
+
+    </form>
+
+  </section>
+
+  <section class="management-card">
+
+    <h2>Assign User to Channel</h2>
+
+    <select
+      name="channelId"
+      [(ngModel)]="channelId">
+
+      <option [ngValue]="null">
+        Select Channel
+      </option>
+
+      <option
+        *ngFor="let channel of channels"
+        [ngValue]="channel.id">
+
+        {{ channel.name }}
+
+      </option>
+
+    </select>
+
+    <select
+      name="userId"
+      [(ngModel)]="userId">
+
+      <option [ngValue]="null">
+        Select User
+      </option>
+
+      <option
+        *ngFor="let user of users"
+        [ngValue]="user.id">
+
+        {{ user.username }}
+
+      </option>
+
+    </select>
+
+    <button
+      type="button"
+      (click)="assignUser()">
+
+      Assign User
+
+    </button>
+
+  </section>
+
+  <p *ngIf="message">
+    {{ message }}
+  </p>
+
+  <p *ngIf="error">
+    {{ error }}
+  </p>
+
+</main>

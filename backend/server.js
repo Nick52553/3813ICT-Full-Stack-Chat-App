@@ -6,36 +6,17 @@ const cors = require('cors');
 const app = express();
 const PORT = 3000;
 
-// ----------------------------------------------------
-// MIDDLEWARE
-// ----------------------------------------------------
-
 app.use(cors());
 app.use(express.json());
-
-// ----------------------------------------------------
-// DATA FILE LOCATIONS
-// ----------------------------------------------------
 
 const DATA_DIR = path.join(
   __dirname,
   'DATA FOR THE APP PHASE 1'
 );
 
-const USERS_FILE = path.join(
-  DATA_DIR,
-  'user.json'
-);
-
-const GROUPS_FILE = path.join(
-  DATA_DIR,
-  'groups.json'
-);
-
-const CHANNELS_FILE = path.join(
-  DATA_DIR,
-  'channels.json'
-);
+const USERS_FILE = path.join(DATA_DIR, 'user.json');
+const GROUPS_FILE = path.join(DATA_DIR, 'groups.json');
+const CHANNELS_FILE = path.join(DATA_DIR, 'channels.json');
 
 // ----------------------------------------------------
 // HELPER FUNCTIONS
@@ -43,9 +24,7 @@ const CHANNELS_FILE = path.join(
 
 function readJson(file) {
   try {
-    return JSON.parse(
-      fs.readFileSync(file, 'utf8')
-    );
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch (error) {
     console.error(`Error reading ${file}:`, error.message);
     return [];
@@ -68,7 +47,7 @@ function writeJson(file, data) {
 }
 
 function getNextId(items) {
-  if (!items || items.length === 0) {
+  if (!items.length) {
     return 1;
   }
 
@@ -78,7 +57,7 @@ function getNextId(items) {
 }
 
 // ----------------------------------------------------
-// TEST / HOME ROUTE
+// HOME
 // ----------------------------------------------------
 
 app.get('/', (req, res) => {
@@ -96,7 +75,6 @@ app.post('/api/login', (req, res) => {
 
   const { username, password } = req.body;
 
-  // Check that both fields were supplied
   if (!username || !password) {
     return res.status(400).json({
       message: 'Username and password are required'
@@ -111,33 +89,29 @@ app.post('/api/login', (req, res) => {
       u.password === password
   );
 
-  // Invalid login
   if (!user) {
     return res.status(401).json({
       message: 'Invalid username or password'
     });
   }
 
-  // Successful login
   res.json({
     id: user.id,
     username: user.username,
     age: user.age,
     role: user.role
   });
-
 });
 
 // ----------------------------------------------------
 // USERS
 // ----------------------------------------------------
 
-// Get all users
-// Passwords are NOT returned.
 app.get('/api/users', (req, res) => {
 
   const users = readJson(USERS_FILE);
 
+  // Never send passwords to Angular
   const safeUsers = users.map(user => ({
     id: user.id,
     username: user.username,
@@ -146,7 +120,6 @@ app.get('/api/users', (req, res) => {
   }));
 
   res.json(safeUsers);
-
 });
 
 // ----------------------------------------------------
@@ -162,21 +135,33 @@ app.post('/api/users', (req, res) => {
     role
   } = req.body;
 
-  // Basic validation
   if (!username || !password) {
     return res.status(400).json({
       message: 'Username and password are required'
     });
   }
 
+  if (password.length < 8) {
+    return res.status(400).json({
+      message: 'Password must be at least 8 characters'
+    });
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    return res.status(400).json({
+      message: 'Password must contain at least one uppercase letter'
+    });
+  }
+
   const users = readJson(USERS_FILE);
 
-  // Prevent duplicate usernames
-  const existingUser = users.find(
-    user => user.username === username
+  const duplicate = users.find(
+    user =>
+      user.username.toLowerCase() ===
+      username.trim().toLowerCase()
   );
 
-  if (existingUser) {
+  if (duplicate) {
     return res.status(409).json({
       message: 'Username already exists'
     });
@@ -184,47 +169,35 @@ app.post('/api/users', (req, res) => {
 
   const newUser = {
     id: getNextId(users),
-    username: username,
-    password: password,
+    username: username.trim(),
+    password,
     age: Number(age) || 0,
     role: role || 'user'
   };
 
   users.push(newUser);
 
-  const saved = writeJson(
-    USERS_FILE,
-    users
-  );
-
-  if (!saved) {
+  if (!writeJson(USERS_FILE, users)) {
     return res.status(500).json({
       message: 'Could not save user'
     });
   }
 
-  // Do not send password back
   res.status(201).json({
     id: newUser.id,
     username: newUser.username,
     age: newUser.age,
     role: newUser.role
   });
-
 });
 
-/
+// ----------------------------------------------------
+// GROUPS
+// ----------------------------------------------------
 
-// Get all groups
 app.get('/api/groups', (req, res) => {
-
-  const groups = readJson(GROUPS_FILE);
-
-  res.json(groups);
-
+  res.json(readJson(GROUPS_FILE));
 });
-
-
 
 app.get('/api/groups/:groupId', (req, res) => {
 
@@ -241,9 +214,11 @@ app.get('/api/groups/:groupId', (req, res) => {
   }
 
   res.json(group);
-
 });
 
+// ----------------------------------------------------
+// CREATE GROUP
+// ----------------------------------------------------
 
 app.post('/api/groups', (req, res) => {
 
@@ -255,8 +230,7 @@ app.post('/api/groups', (req, res) => {
     memberIds
   } = req.body;
 
-  // Basic validation
-  if (!name || name.trim() === '') {
+  if (!name || !name.trim()) {
     return res.status(400).json({
       message: 'Group name is required'
     });
@@ -264,14 +238,13 @@ app.post('/api/groups', (req, res) => {
 
   const groups = readJson(GROUPS_FILE);
 
-  // Prevent duplicate group names
-  const existingGroup = groups.find(
+  const duplicate = groups.find(
     group =>
       group.name.toLowerCase() ===
       name.trim().toLowerCase()
   );
 
-  if (existingGroup) {
+  if (duplicate) {
     return res.status(409).json({
       message: 'A group with that name already exists'
     });
@@ -279,70 +252,51 @@ app.post('/api/groups', (req, res) => {
 
   const newGroup = {
     id: getNextId(groups),
-
     name: name.trim(),
-
-    description:
-      description || '',
-
-    ageLimit:
-      Number(ageLimit) || 0,
-
-    adminIds:
-      Array.isArray(adminIds)
-        ? adminIds
-        : [],
-
-    memberIds:
-      Array.isArray(memberIds)
-        ? memberIds
-        : []
+    description: description || '',
+    ageLimit: Number(ageLimit) || 0,
+    adminIds: Array.isArray(adminIds) ? adminIds : [],
+    memberIds: Array.isArray(memberIds) ? memberIds : []
   };
 
   groups.push(newGroup);
 
-  const saved = writeJson(
-    GROUPS_FILE,
-    groups
-  );
-
-  if (!saved) {
+  if (!writeJson(GROUPS_FILE, groups)) {
     return res.status(500).json({
       message: 'Could not save group'
     });
   }
 
   res.status(201).json(newGroup);
-
 });
 
-
+// ----------------------------------------------------
+// UPDATE GROUP
+// ----------------------------------------------------
 
 app.put('/api/groups/:groupId', (req, res) => {
 
   const groups = readJson(GROUPS_FILE);
 
-  const groupIndex = groups.findIndex(
+  const index = groups.findIndex(
     g => g.id === Number(req.params.groupId)
   );
 
-  if (groupIndex === -1) {
+  if (index === -1) {
     return res.status(404).json({
       message: 'Group not found'
     });
   }
 
-  const group = groups[groupIndex];
+  const group = groups[index];
 
-  // Group name stays unchanged
+  // Group name is deliberately not changed here
   if (req.body.description !== undefined) {
     group.description = req.body.description;
   }
 
   if (req.body.ageLimit !== undefined) {
-    group.ageLimit = Number(
-      req.body.ageLimit
-    ) || 0;
+    group.ageLimit = Number(req.body.ageLimit) || 0;
   }
 
   if (Array.isArray(req.body.adminIds)) {
@@ -353,235 +307,289 @@ app.put('/api/groups/:groupId', (req, res) => {
     group.memberIds = req.body.memberIds;
   }
 
-  groups[groupIndex] = group;
+  groups[index] = group;
 
-  const saved = writeJson(
-    GROUPS_FILE,
-    groups
-  );
-
-  if (!saved) {
+  if (!writeJson(GROUPS_FILE, groups)) {
     return res.status(500).json({
       message: 'Could not update group'
     });
   }
 
   res.json(group);
-
 });
 
+// ----------------------------------------------------
+// ADD USER TO GROUP
+// ----------------------------------------------------
 
+app.post('/api/groups/:groupId/members', (req, res) => {
 
-// Get all channels
+  const groupId = Number(req.params.groupId);
+  const userId = Number(req.body.userId);
+
+  const groups = readJson(GROUPS_FILE);
+  const users = readJson(USERS_FILE);
+
+  const group = groups.find(g => g.id === groupId);
+  const user = users.find(u => u.id === userId);
+
+  if (!group) {
+    return res.status(404).json({
+      message: 'Group not found'
+    });
+  }
+
+  if (!user) {
+    return res.status(404).json({
+      message: 'User not found'
+    });
+  }
+
+  if (!group.memberIds.includes(userId)) {
+    group.memberIds.push(userId);
+  }
+
+  if (!writeJson(GROUPS_FILE, groups)) {
+    return res.status(500).json({
+      message: 'Could not update group membership'
+    });
+  }
+
+  res.json(group);
+});
+
+// ----------------------------------------------------
+// REMOVE USER FROM GROUP
+// ----------------------------------------------------
+
+app.delete('/api/groups/:groupId/members/:userId', (req, res) => {
+
+  const groupId = Number(req.params.groupId);
+  const userId = Number(req.params.userId);
+
+  const groups = readJson(GROUPS_FILE);
+
+  const group = groups.find(g => g.id === groupId);
+
+  if (!group) {
+    return res.status(404).json({
+      message: 'Group not found'
+    });
+  }
+
+  group.memberIds =
+    group.memberIds.filter(id => id !== userId);
+
+  group.adminIds =
+    group.adminIds.filter(id => id !== userId);
+
+  if (!writeJson(GROUPS_FILE, groups)) {
+    return res.status(500).json({
+      message: 'Could not remove group member'
+    });
+  }
+
+  res.json(group);
+});
+
+// ----------------------------------------------------
+// ASSIGN GROUP ADMIN
+// ----------------------------------------------------
+
+app.post('/api/groups/:groupId/admins', (req, res) => {
+
+  const groupId = Number(req.params.groupId);
+  const userId = Number(req.body.userId);
+
+  const groups = readJson(GROUPS_FILE);
+  const users = readJson(USERS_FILE);
+
+  const group = groups.find(g => g.id === groupId);
+  const user = users.find(u => u.id === userId);
+
+  if (!group) {
+    return res.status(404).json({
+      message: 'Group not found'
+    });
+  }
+
+  if (!user) {
+    return res.status(404).json({
+      message: 'User not found'
+    });
+  }
+
+  if (!group.memberIds.includes(userId)) {
+    group.memberIds.push(userId);
+  }
+
+  if (!group.adminIds.includes(userId)) {
+    group.adminIds.push(userId);
+  }
+
+  if (!writeJson(GROUPS_FILE, groups)) {
+    return res.status(500).json({
+      message: 'Could not assign group admin'
+    });
+  }
+
+  res.json(group);
+});
+
+// ----------------------------------------------------
+// CHANNELS
+// ----------------------------------------------------
+
 app.get('/api/channels', (req, res) => {
+  res.json(readJson(CHANNELS_FILE));
+});
+
+app.get('/api/channels/:channelId', (req, res) => {
 
   const channels = readJson(CHANNELS_FILE);
 
-  res.json(channels);
+  const channel = channels.find(
+    c => c.id === Number(req.params.channelId)
+  );
 
+  if (!channel) {
+    return res.status(404).json({
+      message: 'Channel not found'
+    });
+  }
+
+  res.json(channel);
 });
 
+app.get('/api/groups/:groupId/channels', (req, res) => {
 
+  const channels = readJson(CHANNELS_FILE);
 
-app.get(
-  '/api/groups/:groupId/channels',
-  (req, res) => {
+  const groupId = Number(req.params.groupId);
 
-    const channels =
-      readJson(CHANNELS_FILE);
+  res.json(
+    channels.filter(
+      channel => channel.groupId === groupId
+    )
+  );
+});
 
-    const groupId =
-      Number(req.params.groupId);
-
-    const groupChannels =
-      channels.filter(
-        channel =>
-          channel.groupId === groupId
-      );
-
-    res.json(groupChannels);
-
-  }
-);
-
-
-app.get(
-  '/api/channels/:channelId',
-  (req, res) => {
-
-    const channels =
-      readJson(CHANNELS_FILE);
-
-    const channel =
-      channels.find(
-        c =>
-          c.id ===
-          Number(req.params.channelId)
-      );
-
-    if (!channel) {
-      return res.status(404).json({
-        message: 'Channel not found'
-      });
-    }
-
-    res.json(channel);
-
-  }
-);
-
-
+// ----------------------------------------------------
+// CREATE CHANNEL
+// ----------------------------------------------------
 
 app.post('/api/channels', (req, res) => {
 
   const {
     groupId,
     name,
-    description
+    description,
+    memberIds
   } = req.body;
 
-  // Validate required fields
-  if (
-    groupId === undefined ||
-    !name ||
-    name.trim() === ''
-  ) {
+  const numericGroupId = Number(groupId);
+
+  if (!numericGroupId || !name || !name.trim()) {
     return res.status(400).json({
-      message:
-        'Group ID and channel name are required'
+      message: 'Group ID and channel name are required'
     });
   }
 
-  const groups =
-    readJson(GROUPS_FILE);
+  const groups = readJson(GROUPS_FILE);
+  const channels = readJson(CHANNELS_FILE);
 
-  const channels =
-    readJson(CHANNELS_FILE);
+  const group = groups.find(
+    g => g.id === numericGroupId
+  );
 
-  const numericGroupId =
-    Number(groupId);
-
-  // Make sure group exists
-  const groupExists =
-    groups.some(
-      group =>
-        group.id === numericGroupId
-    );
-
-  if (!groupExists) {
+  if (!group) {
     return res.status(404).json({
       message: 'Group does not exist'
     });
   }
 
-  
-  const duplicateChannel =
-    channels.find(
-      channel =>
-        channel.groupId === numericGroupId &&
-        channel.name.toLowerCase() ===
-          name.trim().toLowerCase()
-    );
+  const duplicate = channels.find(
+    channel =>
+      channel.groupId === numericGroupId &&
+      channel.name.toLowerCase() ===
+      name.trim().toLowerCase()
+  );
 
-  if (duplicateChannel) {
+  if (duplicate) {
     return res.status(409).json({
-      message:
-        'A channel with that name already exists in this group'
+      message: 'That channel already exists in this group'
     });
   }
 
   const newChannel = {
     id: getNextId(channels),
-
-    groupId:
-      numericGroupId,
-
-    name:
-      name.trim(),
-
-    description:
-      description || ''
+    groupId: numericGroupId,
+    name: name.trim(),
+    description: description || '',
+    memberIds: Array.isArray(memberIds) ? memberIds : []
   };
 
   channels.push(newChannel);
 
-  const saved =
-    writeJson(
-      CHANNELS_FILE,
-      channels
-    );
-
-  if (!saved) {
+  if (!writeJson(CHANNELS_FILE, channels)) {
     return res.status(500).json({
       message: 'Could not save channel'
     });
   }
 
   res.status(201).json(newChannel);
-
 });
 
+// ----------------------------------------------------
+// ADD USER TO CHANNEL
+// ----------------------------------------------------
 
-app.put(
-  '/api/channels/:channelId',
-  (req, res) => {
+app.post('/api/channels/:channelId/members', (req, res) => {
 
-    const channels =
-      readJson(CHANNELS_FILE);
+  const channelId = Number(req.params.channelId);
+  const userId = Number(req.body.userId);
 
-    const channelIndex =
-      channels.findIndex(
-        c =>
-          c.id ===
-          Number(req.params.channelId)
-      );
+  const channels = readJson(CHANNELS_FILE);
+  const users = readJson(USERS_FILE);
 
-    if (channelIndex === -1) {
-      return res.status(404).json({
-        message: 'Channel not found'
-      });
-    }
+  const channel = channels.find(
+    c => c.id === channelId
+  );
 
-    const channel =
-      channels[channelIndex];
+  const user = users.find(
+    u => u.id === userId
+  );
 
-    if (req.body.name !== undefined) {
-      channel.name =
-        req.body.name.trim();
-    }
-
-    if (
-      req.body.description !== undefined
-    ) {
-      channel.description =
-        req.body.description;
-    }
-
-    channels[channelIndex] =
-      channel;
-
-    const saved =
-      writeJson(
-        CHANNELS_FILE,
-        channels
-      );
-
-    if (!saved) {
-      return res.status(500).json({
-        message: 'Could not update channel'
-      });
-    }
-
-    res.json(channel);
-
+  if (!channel) {
+    return res.status(404).json({
+      message: 'Channel not found'
+    });
   }
-);
 
+  if (!user) {
+    return res.status(404).json({
+      message: 'User not found'
+    });
+  }
 
+  if (!channel.memberIds.includes(userId)) {
+    channel.memberIds.push(userId);
+  }
 
+  if (!writeJson(CHANNELS_FILE, channels)) {
+    return res.status(500).json({
+      message: 'Could not update channel membership'
+    });
+  }
+
+  res.json(channel);
+});
+
+// ----------------------------------------------------
+// START SERVER
+// ----------------------------------------------------
 
 app.listen(PORT, () => {
-
   console.log(
     `Server running on http://localhost:${PORT}`
   );
@@ -589,5 +597,4 @@ app.listen(PORT, () => {
   console.log(
     `Data directory: ${DATA_DIR}`
   );
-
 });

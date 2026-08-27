@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Navbar } from '../navbar/navbar';
 import { HttpClient } from '@angular/common/http';
+import { Navbar } from '../navbar/navbar';
 
 @Component({
   selector: 'app-group-list',
@@ -19,23 +19,31 @@ export class GroupList implements OnInit {
 
   groups: any[] = [];
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient
+  ) {}
 
   ngOnInit() {
+    this.loadGroups();
+  }
+
+  loadGroups() {
 
     this.http.get<any[]>(
       'http://localhost:3000/api/groups'
     ).subscribe({
 
-      next: (groups) => {
+      next: groups => {
         this.groups = groups;
       },
 
-      error: (error) => {
-        console.error('Could not load groups:', error);
+      error: error => {
+        console.error(
+          'Could not load groups:',
+          error
+        );
       }
 
     });
-
   }
 }

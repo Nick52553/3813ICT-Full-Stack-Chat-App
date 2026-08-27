@@ -28,10 +28,6 @@ export class Login {
 
   login() {
 
-    console.log('Login button clicked');
-    console.log('Username:', this.username);
-    console.log('Password:', this.password);
-
     this.loginFailed = false;
 
     this.http.post<any>(
@@ -43,8 +39,6 @@ export class Login {
     ).subscribe({
 
       next: (user) => {
-
-        console.log('Login successful:', user);
 
         localStorage.setItem(
           'currentUser',
@@ -59,7 +53,6 @@ export class Login {
         console.error('Login failed:', error);
 
         this.loginFailed = true;
-
       }
 
     });

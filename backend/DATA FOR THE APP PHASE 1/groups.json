@@ -4,15 +4,33 @@
     "name": "Gaming Group",
     "description": "A group for gaming discussion.",
     "ageLimit": 18,
-    "adminIds": [3],
-    "memberIds": [2, 3]
+    "adminIds": [
+      3
+    ],
+    "memberIds": [
+      2,
+      3
+    ]
   },
   {
     "id": 2,
     "name": "Study Group",
     "description": "University study and discussion.",
     "ageLimit": 17,
-    "adminIds": [3],
-    "memberIds": [2, 3]
+    "adminIds": [
+      3
+    ],
+    "memberIds": [
+      2,
+      3
+    ]
+  },
+  {
+    "id": 3,
+    "name": "hello",
+    "description": "hell1111111",
+    "ageLimit": 19,
+    "adminIds": [],
+    "memberIds": []
   }
 ]

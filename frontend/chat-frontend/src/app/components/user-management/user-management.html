@@ -1,273 +1,63 @@
-<div class="user-management-page">
+<app-navbar></app-navbar>
 
-  <app-navbar></app-navbar>
+<section class="create-card">
 
-  <main class="management-container">
+  <h2>Create User</h2>
 
-    <!-- Page Header -->
-    <section class="page-header">
+  <form (ngSubmit)="createUser()">
 
-      <div>
-        <h1>User Management</h1>
-        <p>
-          Manage system users and administrative actions.
-        </p>
-      </div>
+    <input
+      type="text"
+      name="username"
+      [(ngModel)]="username"
+      placeholder="Username"
+      required>
 
-      <div class="admin-badge">
+    <input
+      type="password"
+      name="password"
+      [(ngModel)]="password"
+      placeholder="Password"
+      required>
+
+    <input
+      type="number"
+      name="age"
+      [(ngModel)]="age"
+      min="1"
+      placeholder="Age"
+      required>
+
+    <select
+      name="role"
+      [(ngModel)]="role">
+
+      <option value="user">
+        Regular User
+      </option>
+
+      <option value="groupAdmin">
+        Group Admin
+      </option>
+
+      <option value="superAdmin">
         Super Admin
-      </div>
+      </option>
 
-    </section>
+    </select>
 
-    <!-- Statistics -->
-    <section class="statistics">
+    <button type="submit">
+      Create User
+    </button>
 
-      <div class="stat-card">
-        <span class="stat-label">Total Users</span>
-        <strong>12</strong>
-      </div>
+  </form>
 
-      <div class="stat-card">
-        <span class="stat-label">Active Users</span>
-        <strong>10</strong>
-      </div>
+  <p *ngIf="message">
+    {{ message }}
+  </p>
 
-      <div class="stat-card">
-        <span class="stat-label">Group Admins</span>
-        <strong>3</strong>
-      </div>
+  <p *ngIf="error">
+    {{ error }}
+  </p>
 
-      <div class="stat-card">
-        <span class="stat-label">Pending Requests</span>
-        <strong>2</strong>
-      </div>
-
-    </section>
-
-    <!-- User Management Card -->
-    <section class="users-card">
-
-      <div class="card-top">
-
-        <div>
-          <h2>System Users</h2>
-          <p>
-            View and manage all registered users.
-          </p>
-        </div>
-
-        <button class="add-user-button">
-          + Add User
-        </button>
-
-      </div>
-
-      <!-- Search and Filters -->
-      <div class="filter-bar">
-
-        <input
-          type="text"
-          placeholder="Search by name or email..."
-        />
-
-        <select>
-          <option>All Roles</option>
-          <option>Super Admin</option>
-          <option>Group Admin</option>
-          <option>Regular User</option>
-        </select>
-
-        <select>
-          <option>All Statuses</option>
-          <option>Active</option>
-          <option>Suspended</option>
-        </select>
-
-      </div>
-
-      <!-- Users Table -->
-      <div class="table-container">
-
-        <table>
-
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Groups</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-
-            <tr>
-
-              <td>
-                <div class="user-cell">
-                  <div class="avatar">A</div>
-
-                  <div>
-                    <strong>Allan</strong>
-                    <span>ID: 1</span>
-                  </div>
-                </div>
-              </td>
-
-              <td>allan@example.com</td>
-
-              <td>
-                <span class="role super-admin">
-                  Super Admin
-                </span>
-              </td>
-
-              <td>
-                <span class="status active">
-                  Active
-                </span>
-              </td>
-
-              <td>All Groups</td>
-
-              <td>
-                <button class="view-button">
-                  View
-                </button>
-              </td>
-
-            </tr>
-
-            <tr>
-
-              <td>
-                <div class="user-cell">
-                  <div class="avatar">N</div>
-
-                  <div>
-                    <strong>Nick</strong>
-                    <span>ID: 2</span>
-                  </div>
-                </div>
-              </td>
-
-              <td>nick@example.com</td>
-
-              <td>
-                <span class="role user-role">
-                  Regular User
-                </span>
-              </td>
-
-              <td>
-                <span class="status active">
-                  Active
-                </span>
-              </td>
-
-              <td>2 Groups</td>
-
-              <td class="action-buttons">
-
-                <button class="view-button">
-                  View
-                </button>
-
-                <button class="delete-button">
-                  Delete
-                </button>
-
-              </td>
-
-            </tr>
-
-            <tr>
-
-              <td>
-                <div class="user-cell">
-                  <div class="avatar">J</div>
-
-                  <div>
-                    <strong>Jordan</strong>
-                    <span>ID: 3</span>
-                  </div>
-                </div>
-              </td>
-
-              <td>jordan@example.com</td>
-
-              <td>
-                <span class="role group-admin">
-                  Group Admin
-                </span>
-              </td>
-
-              <td>
-                <span class="status active">
-                  Active
-                </span>
-              </td>
-
-              <td>1 Group</td>
-
-              <td class="action-buttons">
-
-                <button class="view-button">
-                  View
-                </button>
-
-                <button class="delete-button">
-                  Delete
-                </button>
-
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-      <!-- Pagination -->
-      <div class="pagination">
-
-        <span>
-          Showing 1–3 of 12 users
-        </span>
-
-        <div>
-          <button>Previous</button>
-          <button class="current-page">1</button>
-          <button>2</button>
-          <button>3</button>
-          <button>Next</button>
-        </div>
-
-      </div>
-
-    </section>
-
-    <!-- Audit Information -->
-    <section class="audit-card">
-
-      <div>
-        <h2>Administrative Actions</h2>
-        <p>
-          All user management actions are recorded in the audit log.
-        </p>
-      </div>
-
-      <button class="audit-button">
-        View Audit Log
-      </button>
-
-    </section>
-
-  </main>
-
-</div>
+</section>

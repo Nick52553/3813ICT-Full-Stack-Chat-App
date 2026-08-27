@@ -9,8 +9,11 @@ import { GroupManagement } from './components/group-management/group-management'
 import { ChannelList } from './components/channel-list/channel-list';
 import { ChannelManagement } from './components/channel-management/channel-management';
 import { ChatWindow } from './components/chat-window/chat-window';
+import { authGuard } from './auth.guard';
+import { superAdminGuard, groupAdminGuard} from './role.guard';
 
 export const routes: Routes = [
+
   {
     path: '',
     redirectTo: 'login',
@@ -24,46 +27,55 @@ export const routes: Routes = [
 
   {
     path: 'dashboard',
-    component: Dashboard
+    component: Dashboard,
+    canActivate: [authGuard]
   },
 
   {
     path: 'groups',
-    component: GroupList
+    component: GroupList,
+    canActivate: [authGuard]
   },
 
   {
     path: 'groups/manage',
-    component: GroupManagement
+    component: GroupManagement,
+    canActivate: [groupAdminGuard]
   },
 
   {
     path: 'channels/:groupId',
-    component: ChannelList
+    component: ChannelList,
+    canActivate: [authGuard]
   },
 
   {
     path: 'channels/manage',
-    component: ChannelManagement
+    component: ChannelManagement,
+    canActivate: [groupAdminGuard]
   },
 
   {
     path: 'chat/:groupId/:channelId',
-    component: ChatWindow
+    component: ChatWindow,
+    canActivate: [authGuard]
   },
 
   {
     path: 'profile',
-    component: Profile
+    component: Profile,
+    canActivate: [authGuard]
   },
 
   {
     path: 'user-management',
-    component: UserManagement
+    component: UserManagement,
+    canActivate: [superAdminGuard]
   },
 
   {
     path: '**',
     redirectTo: 'dashboard'
   }
+
 ];

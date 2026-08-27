@@ -1,7 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChannelManagement } from '../channel-management/channel-management';
+import { HttpClient } from '@angular/common/http';
 import { Navbar } from '../navbar/navbar';
 
 @Component({
@@ -10,62 +10,141 @@ import { Navbar } from '../navbar/navbar';
   imports: [
     CommonModule,
     FormsModule,
-    ChannelManagement,
     Navbar
   ],
   templateUrl: './group-management.html',
   styleUrl: './group-management.css'
 })
+export class GroupManagement implements OnInit {
 
+  groups: any[] = [];
+  users: any[] = [];
 
-export class GroupManagement {
-  @Input() group: any = {
-    name: '',
-    minAge: 0,
-    members: [],
-    channels: []
-  };
+  selectedGroupId: number | null = null;
+  selectedUserId: number | null = null;
+  selectedAdminId: number | null = null;
 
-  pendingRequests: any[] = [];
+  groupName = '';
+  description = '';
+  ageLimit = 0;
 
-  saveMetadata() {
-    console.log('Group metadata saved:', this.group);
+  message = '';
+  error = '';
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit() {
+    this.loadGroups();
+    this.loadUsers();
   }
 
-  approve(request: any) {
-    console.log('Approved:', request);
-
-    this.pendingRequests =
-      this.pendingRequests.filter((req) => req !== request);
-
-    if (!this.group.members) {
-      this.group.members = [];
-    }
-
-    this.group.members.push({
-      username: request.username
+  loadGroups() {
+    this.http.get<any[]>(
+      'http://localhost:3000/api/groups'
+    ).subscribe({
+      next: groups => this.groups = groups,
+      error: error => console.error(error)
     });
   }
 
-  deny(request: any) {
-    console.log('Denied:', request);
-
-    this.pendingRequests =
-      this.pendingRequests.filter((req) => req !== request);
+  loadUsers() {
+    this.http.get<any[]>(
+      'http://localhost:3000/api/users'
+    ).subscribe({
+      next: users => this.users = users,
+      error: error => console.error(error)
+    });
   }
 
-  banFromGroup(member: any) {
-    if (!this.group.members) {
+  createGroup() {
+
+    this.message = '';
+    this.error = '';
+
+    this.http.post<any>(
+      'http://localhost:3000/api/groups',
+      {
+        name: this.groupName,
+        description: this.description,
+        ageLimit: this.ageLimit,
+        adminIds: [],
+        memberIds: []
+      }
+    ).subscribe({
+
+      next: group => {
+
+        this.message =
+          `${group.name} was created successfully.`;
+
+        this.groupName = '';
+        this.description = '';
+        this.ageLimit = 0;
+
+        this.loadGroups();
+      },
+
+      error: error => {
+
+        this.error =
+          error.error?.message ||
+          'Could not create group.';
+      }
+
+    });
+  }
+
+  addMember() {
+
+    if (!this.selectedGroupId || !this.selectedUserId) {
       return;
     }
 
-    this.group.members =
-      this.group.members.filter(
-        (m: any) => m !== member
-      );
+    this.http.post<any>(
+      `http://localhost:3000/api/groups/${this.selectedGroupId}/members`,
+      {
+        userId: this.selectedUserId
+      }
+    ).subscribe({
+
+      next: () => {
+        this.message = 'User added to group.';
+        this.loadGroups();
+      },
+
+      error: error => {
+        this.error =
+          error.error?.message ||
+          'Could not add user.';
+      }
+
+    });
   }
 
-  requestSystemBan(member: any) {
-    console.log('System ban requested for:', member);
+  assignAdmin() {
+
+    if (!this.selectedGroupId || !this.selectedAdminId) {
+      return;
+    }
+
+    this.http.post<any>(
+      `http://localhost:3000/api/groups/${this.selectedGroupId}/admins`,
+      {
+        userId: this.selectedAdminId
+      }
+    ).subscribe({
+
+      next: () => {
+        this.message = 'Group admin assigned.';
+        this.loadGroups();
+      },
+
+      error: error => {
+        this.error =
+          error.error?.message ||
+          'Could not assign group admin.';
+      }
+
+    });
   }
 }

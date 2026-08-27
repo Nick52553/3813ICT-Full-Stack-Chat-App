@@ -1,40 +1,131 @@
-<p>group-management works!</p>
 <app-navbar></app-navbar>
 
-<div class="group-management">
-  <h2>Manage: {{ group.name }}</h2>
-  <p class="note">Group name can't be changed here — only Super Admin can rename a group.</p>
+<main class="management-container">
 
-  <section class="metadata">
-    <label>Age limit
-      <input type="number" [(ngModel)]="group.minAge" />
-    </label>
-    <button (click)="saveMetadata()">Save</button>
-  </section>
+  <h1>Group Management</h1>
 
-  <section class="join-requests">
-    <h3>Pending Join Requests</h3>
-    <div class="request-row" *ngFor="let req of pendingRequests">
-      <span>{{ req.username }}</span>
-      <button (click)="approve(req)">Approve</button>
-      <button (click)="deny(req)" class="danger">Deny</button>
-    </div>
-    <p *ngIf="pendingRequests.length === 0" class="empty">No pending requests.</p>
-  </section>
+  <section class="management-card">
 
-  <section class="members">
-    <h3>Members</h3>
-    <div class="member-row" *ngFor="let member of group.members">
-      <span>{{ member.username }}</span>
-      <button (click)="banFromGroup(member)" class="danger">Ban from group</button>
-      <button (click)="requestSystemBan(member)" class="danger-outline">
-        Request system-wide ban
+    <h2>Create Group</h2>
+
+    <form (ngSubmit)="createGroup()">
+
+      <input
+        type="text"
+        name="groupName"
+        [(ngModel)]="groupName"
+        placeholder="Group name"
+        required>
+
+      <textarea
+        name="description"
+        [(ngModel)]="description"
+        placeholder="Group description">
+      </textarea>
+
+      <input
+        type="number"
+        name="ageLimit"
+        [(ngModel)]="ageLimit"
+        min="0"
+        placeholder="Age limit">
+
+      <button type="submit">
+        Create Group
       </button>
-    </div>
+
+    </form>
+
   </section>
 
-  <section class="channels">
-    <h3>Channels in this group</h3>
-    <app-channel-management [group]="group"></app-channel-management>
+  <section class="management-card">
+
+    <h2>Assign User to Group</h2>
+
+    <select
+      name="selectedGroupId"
+      [(ngModel)]="selectedGroupId">
+
+      <option [ngValue]="null">
+        Select Group
+      </option>
+
+      <option
+        *ngFor="let group of groups"
+        [ngValue]="group.id">
+
+        {{ group.name }}
+
+      </option>
+
+    </select>
+
+    <select
+      name="selectedUserId"
+      [(ngModel)]="selectedUserId">
+
+      <option [ngValue]="null">
+        Select User
+      </option>
+
+      <option
+        *ngFor="let user of users"
+        [ngValue]="user.id">
+
+        {{ user.username }}
+
+      </option>
+
+    </select>
+
+    <button
+      type="button"
+      (click)="addMember()">
+
+      Add Member
+
+    </button>
+
   </section>
-</div>
+
+  <section class="management-card">
+
+    <h2>Assign Group Admin</h2>
+
+    <select
+      name="selectedAdminId"
+      [(ngModel)]="selectedAdminId">
+
+      <option [ngValue]="null">
+        Select User
+      </option>
+
+      <option
+        *ngFor="let user of users"
+        [ngValue]="user.id">
+
+        {{ user.username }}
+
+      </option>
+
+    </select>
+
+    <button
+      type="button"
+      (click)="assignAdmin()">
+
+      Assign Admin
+
+    </button>
+
+  </section>
+
+  <p *ngIf="message">
+    {{ message }}
+  </p>
+
+  <p *ngIf="error">
+    {{ error }}
+  </p>
+
+</main>

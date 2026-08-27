@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { Navbar } from '../navbar/navbar';
 
 @Component({
@@ -20,40 +21,56 @@ export class ChannelList implements OnInit {
 
   groupName = '';
 
-  channels = [
-    {
-      id: 'general',
-      name: 'General',
-      description: 'General discussion',
-      members: 8
-    },
-    {
-      id: 'announcements',
-      name: 'Announcements',
-      description: 'Important group announcements',
-      members: 8
-    },
-    {
-      id: 'games',
-      name: 'Games',
-      description: 'Gaming discussion',
-      members: 6
-    }
-  ];
+  channels: any[] = [];
 
-  constructor(private route: ActivatedRoute) {}
+  constructor(
+    private route: ActivatedRoute,
+    private http: HttpClient
+  ) {}
 
   ngOnInit() {
 
     this.groupId =
       this.route.snapshot.paramMap.get('groupId') || '';
 
-    if (this.groupId === 'gaming') {
-      this.groupName = 'Gaming Group';
-    } else if (this.groupId === 'study') {
-      this.groupName = 'Study Group';
-    } else {
-      this.groupName = 'General Community';
+    this.loadChannels();
+    this.loadGroup();
+
+  }
+
+  loadGroup() {
+
+    if (!this.groupId) {
+      return;
     }
+
+    this.http.get<any>(
+      `http://localhost:3000/api/groups/${this.groupId}`
+    ).subscribe({
+      next: group => {
+        this.groupName = group.name;
+      }
+    });
+
+  }
+
+  loadChannels() {
+
+    this.http.get<any[]>(
+      `http://localhost:3000/api/groups/${this.groupId}/channels`
+    ).subscribe({
+
+      next: channels => {
+        this.channels = channels;
+      },
+
+      error: error => {
+        console.error(
+          'Could not load channels:',
+          error
+        );
+      }
+
+    });
   }
 }

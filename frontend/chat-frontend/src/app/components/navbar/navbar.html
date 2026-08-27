@@ -20,14 +20,14 @@
 
     <a
       *ngIf="currentUser.role === 'groupAdmin' || currentUser.role === 'superAdmin'"
-      routerLink="/channels/manage">
-      Channel Management
+      routerLink="/groups/manage">
+      Group Management
     </a>
 
     <a
       *ngIf="currentUser.role === 'groupAdmin' || currentUser.role === 'superAdmin'"
-      routerLink="/groups/manage">
-      Group Management
+      routerLink="/channels/manage">
+      Channel Management
     </a>
 
     <a

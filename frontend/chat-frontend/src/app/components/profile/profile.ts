@@ -15,8 +15,16 @@ export class Profile {
     '{"username":"User","age":0,"role":"user"}'
   );
 
+  get initials(): string {
+    return this.currentUser.username
+      .substring(0, 2)
+      .toUpperCase();
+  }
+
   get roleName(): string {
+
     switch (this.currentUser.role) {
+
       case 'superAdmin':
         return 'Super Admin';
 
@@ -25,12 +33,8 @@ export class Profile {
 
       default:
         return 'Regular User';
-    }
-  }
 
-  get initials(): string {
-    return this.currentUser.username
-      .substring(0, 2)
-      .toUpperCase();
+    }
+
   }
 }
