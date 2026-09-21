@@ -5,7 +5,8 @@
     "description": "A group for gaming discussion.",
     "ageLimit": 18,
     "adminIds": [
-      3
+      3,
+      2
     ],
     "memberIds": [
       2,
@@ -30,7 +31,43 @@
     "name": "batting",
     "description": "batting",
     "ageLimit": 18,
+    "adminIds": [
+      3,
+      4
+    ],
+    "memberIds": [
+      3,
+      4
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Fishing",
+    "description": "fishing123",
+    "ageLimit": 18,
     "adminIds": [],
-    "memberIds": []
+    "memberIds": [
+      2
+    ]
+  },
+  {
+    "id": 5,
+    "name": "golfing",
+    "description": "golfingggggggggggggggggg",
+    "ageLimit": 18,
+    "adminIds": [],
+    "memberIds": [
+      2
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Test",
+    "description": "TEST TEST TEST",
+    "ageLimit": 18,
+    "adminIds": [],
+    "memberIds": [
+      2
+    ]
   }
 ]

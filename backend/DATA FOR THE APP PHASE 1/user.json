@@ -19,5 +19,26 @@
     "password": "jordan123",
     "age": 23,
     "role": "groupAdmin"
+  },
+  {
+    "id": 4,
+    "username": "Bobby",
+    "password": "Bobby123",
+    "age": 18,
+    "role": "user"
+  },
+  {
+    "id": 5,
+    "username": "David",
+    "password": "David123",
+    "age": 16,
+    "role": "user"
+  },
+  {
+    "id": 6,
+    "username": "Joe",
+    "password": "Joe12345678",
+    "age": 18,
+    "role": "user"
   }
 ]

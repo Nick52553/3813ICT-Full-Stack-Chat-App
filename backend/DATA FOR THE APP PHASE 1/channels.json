@@ -38,5 +38,15 @@
       2,
       3
     ]
+  },
+  {
+    "id": 5,
+    "groupId": 1,
+    "name": "World of war craft gamers",
+    "description": "this channel is for World of war craft gamers",
+    "memberIds": [
+      2,
+      3
+    ]
   }
 ]
