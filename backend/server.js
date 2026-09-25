@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const { connectDb } = require('./db');
 
 const app = express();
 const PORT = 3000;
@@ -1501,14 +1502,27 @@ app.get('/api/audit', (req, res) => {
 // START SERVER
 // ====================================================
 
-app.listen(PORT, () => {
+connectDb()
+  .then(() => {
 
-  console.log(
-    `Server running on http://localhost:${PORT}`
-  );
+    app.listen(PORT, () => {
 
-  console.log(
-    `Data directory: ${DATA_DIR}`
-  );
+      console.log(
+        `Server running on http://localhost:${PORT}`
+      );
 
-});
+      console.log(
+        `Data directory: ${DATA_DIR}`
+      );
+
+    });
+  })
+  .catch(error => {
+
+    console.error(
+      'Could not connect to MongoDB:',
+      error.message
+    );
+
+    process.exit(1);
+  });
