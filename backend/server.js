@@ -2,7 +2,11 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
-const { connectDb } = require('./db');
+const {
+  connectDb,
+  getDb,
+  getNextId: getNextDbId
+} = require('./db');
 
 const app = express();
 const PORT = 3000;
@@ -19,7 +23,6 @@ const DATA_DIR = path.join(
   'DATA FOR THE APP PHASE 1'
 );
 
-const USERS_FILE = path.join(DATA_DIR, 'user.json');
 const GROUPS_FILE = path.join(DATA_DIR, 'groups.json');
 const CHANNELS_FILE = path.join(DATA_DIR, 'channels.json');
 const REQUESTS_FILE = path.join(DATA_DIR, 'requests.json');
@@ -84,12 +87,53 @@ function logAudit(action, actorId, details) {
   writeJson(AUDIT_FILE, validEntries);
 }
 
-function getUserById(userId) {
-  const users = readJson(USERS_FILE);
+// ====================================================
+// MONGODB USER HELPERS
+// ====================================================
 
-  return users.find(
-    user => user.id === Number(userId)
-  );
+function usersCollection() {
+  return getDb().collection('users');
+}
+
+async function getUserById(userId) {
+  return usersCollection().findOne({
+    id: Number(userId)
+  });
+}
+
+// Never send the password or Mongo's _id to the client.
+function toSafeUser(user) {
+  return {
+    id: user.id,
+    username: user.username,
+    age: user.age,
+    role: user.role
+  };
+}
+
+// Insert a new user with the next numeric id.
+// Returns null if the username is already taken.
+async function insertUser({ username, password, age, role }) {
+
+  const newUser = {
+    id: await getNextDbId('users'),
+    username: username.trim(),
+    password,
+    age: Number(age) || 0,
+    role
+  };
+
+  try {
+    await usersCollection().insertOne(newUser);
+  } catch (error) {
+    // 11000 = duplicate key (unique username index)
+    if (error.code === 11000) {
+      return null;
+    }
+    throw error;
+  }
+
+  return newUser;
 }
 
 // ====================================================
@@ -160,22 +204,20 @@ app.get('/', (req, res) => {
 // ====================================================
 
 // Check whether the app still needs its first Super Admin.
-app.get('/api/bootstrap-status', (req, res) => {
+app.get('/api/bootstrap-status', async (req, res) => {
 
-  const users = readJson(USERS_FILE);
-
-  const hasSuperAdmin = users.some(
-    user => user.role === 'superAdmin'
-  );
+  const superAdmin = await usersCollection().findOne({
+    role: 'superAdmin'
+  });
 
   res.json({
-    needsBootstrap: !hasSuperAdmin
+    needsBootstrap: !superAdmin
   });
 });
 
 // Create the first Super Admin. Only works while no
 // Super Admin exists yet - locks itself out after that.
-app.post('/api/bootstrap', (req, res) => {
+app.post('/api/bootstrap', async (req, res) => {
 
   const {
     username,
@@ -189,43 +231,26 @@ app.post('/api/bootstrap', (req, res) => {
     });
   }
 
-  const users = readJson(USERS_FILE);
+  const superAdmin = await usersCollection().findOne({
+    role: 'superAdmin'
+  });
 
-  const hasSuperAdmin = users.some(
-    user => user.role === 'superAdmin'
-  );
-
-  if (hasSuperAdmin) {
+  if (superAdmin) {
     return res.status(403).json({
       message: 'Super Admin has already been set up'
     });
   }
 
-  const duplicate = users.find(
-    user =>
-      user.username.toLowerCase() ===
-      username.trim().toLowerCase()
-  );
+  const newUser = await insertUser({
+    username,
+    password,
+    age,
+    role: 'superAdmin'
+  });
 
-  if (duplicate) {
+  if (!newUser) {
     return res.status(409).json({
       message: 'Username already exists'
-    });
-  }
-
-  const newUser = {
-    id: getNextId(users),
-    username: username.trim(),
-    password,
-    age: Number(age) || 0,
-    role: 'superAdmin'
-  };
-
-  users.push(newUser);
-
-  if (!writeJson(USERS_FILE, users)) {
-    return res.status(500).json({
-      message: 'Could not save user'
     });
   }
 
@@ -233,19 +258,14 @@ app.post('/api/bootstrap', (req, res) => {
     username: newUser.username
   });
 
-  res.status(201).json({
-    id: newUser.id,
-    username: newUser.username,
-    age: newUser.age,
-    role: newUser.role
-  });
+  res.status(201).json(toSafeUser(newUser));
 });
 
 // ====================================================
 // LOGIN
 // ====================================================
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
 
   const {
     username,
@@ -258,13 +278,10 @@ app.post('/api/login', (req, res) => {
     });
   }
 
-  const users = readJson(USERS_FILE);
-
-  const user = users.find(
-    u =>
-      u.username === username &&
-      u.password === password
-  );
+  const user = await usersCollection().findOne({
+    username,
+    password
+  });
 
   if (!user) {
     return res.status(401).json({
@@ -272,12 +289,7 @@ app.post('/api/login', (req, res) => {
     });
   }
 
-  res.json({
-    id: user.id,
-    username: user.username,
-    age: user.age,
-    role: user.role
-  });
+  res.json(toSafeUser(user));
 });
 
 // ====================================================
@@ -285,22 +297,18 @@ app.post('/api/login', (req, res) => {
 // ====================================================
 
 // Get users
-app.get('/api/users', (req, res) => {
+app.get('/api/users', async (req, res) => {
 
-  const users = readJson(USERS_FILE);
+  const users = await usersCollection()
+    .find()
+    .sort({ id: 1 })
+    .toArray();
 
-  const safeUsers = users.map(user => ({
-    id: user.id,
-    username: user.username,
-    age: user.age,
-    role: user.role
-  }));
-
-  res.json(safeUsers);
+  res.json(users.map(toSafeUser));
 });
 
 // Create user
-app.post('/api/users', (req, res) => {
+app.post('/api/users', async (req, res) => {
 
   const {
     username,
@@ -315,33 +323,16 @@ app.post('/api/users', (req, res) => {
     });
   }
 
-  const users = readJson(USERS_FILE);
+  const newUser = await insertUser({
+    username,
+    password,
+    age,
+    role: role || 'user'
+  });
 
-  const duplicate = users.find(
-    user =>
-      user.username.toLowerCase() ===
-      username.trim().toLowerCase()
-  );
-
-  if (duplicate) {
+  if (!newUser) {
     return res.status(409).json({
       message: 'Username already exists'
-    });
-  }
-
-  const newUser = {
-    id: getNextId(users),
-    username: username.trim(),
-    password,
-    age: Number(age) || 0,
-    role: role || 'user'
-  };
-
-  users.push(newUser);
-
-  if (!writeJson(USERS_FILE, users)) {
-    return res.status(500).json({
-      message: 'Could not save user'
     });
   }
 
@@ -350,12 +341,7 @@ app.post('/api/users', (req, res) => {
     role: newUser.role
   });
 
-  res.status(201).json({
-    id: newUser.id,
-    username: newUser.username,
-    age: newUser.age,
-    role: newUser.role
-  });
+  res.status(201).json(toSafeUser(newUser));
 });
 
 // ====================================================
@@ -441,21 +427,18 @@ app.post('/api/groups', (req, res) => {
 });
 
 // Add member to group
-app.post('/api/groups/:groupId/members', (req, res) => {
+app.post('/api/groups/:groupId/members', async (req, res) => {
 
   const groupId = Number(req.params.groupId);
   const userId = Number(req.body.userId);
 
   const groups = readJson(GROUPS_FILE);
-  const users = readJson(USERS_FILE);
 
   const group = groups.find(
     g => g.id === groupId
   );
 
-  const user = users.find(
-    u => u.id === userId
-  );
+  const user = await getUserById(userId);
 
   if (!group) {
     return res.status(404).json({
@@ -483,21 +466,18 @@ app.post('/api/groups/:groupId/members', (req, res) => {
 });
 
 // Assign group admin
-app.post('/api/groups/:groupId/admins', (req, res) => {
+app.post('/api/groups/:groupId/admins', async (req, res) => {
 
   const groupId = Number(req.params.groupId);
   const userId = Number(req.body.userId);
 
   const groups = readJson(GROUPS_FILE);
-  const users = readJson(USERS_FILE);
 
   const group = groups.find(
     g => g.id === groupId
   );
 
-  const user = users.find(
-    u => u.id === userId
-  );
+  const user = await getUserById(userId);
 
   if (!group || !user) {
     return res.status(404).json({
@@ -522,14 +502,10 @@ app.post('/api/groups/:groupId/admins', (req, res) => {
   // Reflect the promotion on the user's global role,
   // unless they are already the Super Admin.
   if (user.role === 'user') {
-
-    user.role = 'groupAdmin';
-
-    if (!writeJson(USERS_FILE, users)) {
-      return res.status(500).json({
-        message: 'Could not update user role'
-      });
-    }
+    await usersCollection().updateOne(
+      { id: userId },
+      { $set: { role: 'groupAdmin' } }
+    );
   }
 
   logAudit('group.admin.promoted', userId, {
@@ -542,21 +518,18 @@ app.post('/api/groups/:groupId/admins', (req, res) => {
 });
 
 // Demote a group admin back to a regular member
-app.post('/api/groups/:groupId/admins/demote', (req, res) => {
+app.post('/api/groups/:groupId/admins/demote', async (req, res) => {
 
   const groupId = Number(req.params.groupId);
   const userId = Number(req.body.userId);
 
   const groups = readJson(GROUPS_FILE);
-  const users = readJson(USERS_FILE);
 
   const group = groups.find(
     g => g.id === groupId
   );
 
-  const user = users.find(
-    u => u.id === userId
-  );
+  const user = await getUserById(userId);
 
   if (!group || !user) {
     return res.status(404).json({
@@ -581,14 +554,10 @@ app.post('/api/groups/:groupId/admins/demote', (req, res) => {
   );
 
   if (!stillAdminElsewhere && user.role === 'groupAdmin') {
-
-    user.role = 'user';
-
-    if (!writeJson(USERS_FILE, users)) {
-      return res.status(500).json({
-        message: 'Could not update user role'
-      });
-    }
+    await usersCollection().updateOne(
+      { id: userId },
+      { $set: { role: 'user' } }
+    );
   }
 
   logAudit('group.admin.demoted', userId, {
@@ -694,21 +663,18 @@ app.post('/api/channels', (req, res) => {
 });
 
 // Add user to channel
-app.post('/api/channels/:channelId/members', (req, res) => {
+app.post('/api/channels/:channelId/members', async (req, res) => {
 
   const channelId = Number(req.params.channelId);
   const userId = Number(req.body.userId);
 
   const channels = readJson(CHANNELS_FILE);
-  const users = readJson(USERS_FILE);
 
   const channel = channels.find(
     c => c.id === channelId
   );
 
-  const user = users.find(
-    u => u.id === userId
-  );
+  const user = await getUserById(userId);
 
   if (!channel || !user) {
     return res.status(404).json({
@@ -736,7 +702,7 @@ app.post('/api/channels/:channelId/members', (req, res) => {
 // ====================================================
 
 // Get requests
-app.get('/api/requests', (req, res) => {
+app.get('/api/requests', async (req, res) => {
 
   const {
     status,
@@ -761,7 +727,7 @@ app.get('/api/requests', (req, res) => {
   if (reviewerId) {
 
     const reviewer =
-      getUserById(reviewerId);
+      await getUserById(reviewerId);
 
     if (!reviewer) {
       return res.status(404).json({
@@ -791,7 +757,7 @@ app.get('/api/requests', (req, res) => {
 });
 
 // Create request
-app.post('/api/requests', (req, res) => {
+app.post('/api/requests', async (req, res) => {
 
   const {
     type,
@@ -805,7 +771,7 @@ app.post('/api/requests', (req, res) => {
   } = req.body;
 
   const requester =
-    getUserById(requesterId);
+    await getUserById(requesterId);
 
   if (!requester) {
     return res.status(404).json({
@@ -892,7 +858,7 @@ app.post('/api/requests', (req, res) => {
     }
 
     const targetUser =
-      getUserById(targetUserId);
+      await getUserById(targetUserId);
 
     if (!targetUser) {
       return res.status(404).json({
@@ -969,7 +935,7 @@ app.post('/api/requests', (req, res) => {
 // APPROVE / DENY REQUEST
 // ====================================================
 
-app.put('/api/requests/:requestId', (req, res) => {
+app.put('/api/requests/:requestId', async (req, res) => {
 
   const requestId =
     Number(req.params.requestId);
@@ -990,7 +956,7 @@ app.put('/api/requests/:requestId', (req, res) => {
   }
 
   const reviewer =
-    getUserById(reviewerId);
+    await getUserById(reviewerId);
 
   if (!reviewer) {
     return res.status(404).json({
@@ -1409,12 +1375,12 @@ app.put('/api/requests/:requestId', (req, res) => {
 // DELETE USER
 // ====================================================
 
-app.delete('/api/users/:userId', (req, res) => {
+app.delete('/api/users/:userId', async (req, res) => {
 
   const userId = Number(req.params.userId);
   const requesterId = Number(req.query.requesterId);
 
-  const requester = getUserById(requesterId);
+  const requester = await getUserById(requesterId);
 
   if (!requester || requester.role !== 'superAdmin') {
     return res.status(403).json({
@@ -1422,23 +1388,13 @@ app.delete('/api/users/:userId', (req, res) => {
     });
   }
 
-  const users = readJson(USERS_FILE);
-
-  const target = users.find(u => u.id === userId);
+  const target = await usersCollection().findOneAndDelete({
+    id: userId
+  });
 
   if (!target) {
     return res.status(404).json({
       message: 'User not found'
-    });
-  }
-
-  const remainingUsers = users.filter(
-    u => u.id !== userId
-  );
-
-  if (!writeJson(USERS_FILE, remainingUsers)) {
-    return res.status(500).json({
-      message: 'Could not delete user'
     });
   }
 
@@ -1476,11 +1432,11 @@ app.delete('/api/users/:userId', (req, res) => {
 // AUDIT LOG
 // ====================================================
 
-app.get('/api/audit', (req, res) => {
+app.get('/api/audit', async (req, res) => {
 
   const requesterId = Number(req.query.requesterId);
 
-  const requester = getUserById(requesterId);
+  const requester = await getUserById(requesterId);
 
   if (!requester || requester.role !== 'superAdmin') {
     return res.status(403).json({
