@@ -1259,6 +1259,207 @@ app.delete('/api/users/:userId', async (req, res) => {
 });
 
 // ====================================================
+// MESSAGES
+// ====================================================
+
+const MAX_MESSAGE_LENGTH = 2000;
+
+function messagesCollection() {
+  return getDb().collection('messages');
+}
+
+// A user can use a channel if they are a member of it,
+// an admin of its group, or the Super Admin.
+async function canAccessChannel(user, channel) {
+
+  if (!user || !channel) {
+    return false;
+  }
+
+  if (user.role === 'superAdmin') {
+    return true;
+  }
+
+  if (channel.memberIds.includes(user.id)) {
+    return true;
+  }
+
+  const group = await getGroupById(channel.groupId);
+
+  return Boolean(group) && group.adminIds.includes(user.id);
+}
+
+// Look up the user and channel for a message route and
+// check access. Returns { user, channel } or { error }.
+async function loadChannelAccess(userId, channelId) {
+
+  const user = await getUserById(userId);
+
+  if (!user) {
+    return { error: { status: 404, message: 'User not found' } };
+  }
+
+  const channel = await channelsCollection().findOne(
+    { id: Number(channelId) },
+    WITHOUT_MONGO_ID
+  );
+
+  if (!channel) {
+    return { error: { status: 404, message: 'Channel not found' } };
+  }
+
+  if (!(await canAccessChannel(user, channel))) {
+    return {
+      error: {
+        status: 403,
+        message: 'You are not a member of this channel'
+      }
+    };
+  }
+
+  return { user, channel };
+}
+
+// Get a channel's messages, oldest first.
+// ?userId= (required) and ?limit= (optional, default 50)
+app.get('/api/channels/:channelId/messages', async (req, res) => {
+
+  const { channel, error } = await loadChannelAccess(
+    req.query.userId,
+    req.params.channelId
+  );
+
+  if (error) {
+    return res.status(error.status).json({
+      message: error.message
+    });
+  }
+
+  const limit = Math.min(
+    Math.max(Number(req.query.limit) || 50, 1),
+    200
+  );
+
+  // Take the newest N, then flip them so the
+  // chat window can render oldest-to-newest.
+  const messages = await messagesCollection()
+    .find({ channelId: channel.id }, WITHOUT_MONGO_ID)
+    .sort({ timestamp: -1, id: -1 })
+    .limit(limit)
+    .toArray();
+
+  res.json(messages.reverse());
+});
+
+// Send a message to a channel.
+// Body: { userId, text }
+app.post('/api/channels/:channelId/messages', async (req, res) => {
+
+  const text =
+    typeof req.body.text === 'string'
+      ? req.body.text.trim()
+      : '';
+
+  if (!text) {
+    return res.status(400).json({
+      message: 'Message text is required'
+    });
+  }
+
+  if (text.length > MAX_MESSAGE_LENGTH) {
+    return res.status(400).json({
+      message:
+        `Messages can be at most ${MAX_MESSAGE_LENGTH} characters`
+    });
+  }
+
+  const { user, channel, error } = await loadChannelAccess(
+    req.body.userId,
+    req.params.channelId
+  );
+
+  if (error) {
+    return res.status(error.status).json({
+      message: error.message
+    });
+  }
+
+  const newMessage = {
+    id: await getNextId('messages'),
+    channelId: channel.id,
+    groupId: channel.groupId,
+    userId: user.id,
+    // Stored so the history still shows a name
+    // if the user is later deleted.
+    username: user.username,
+    text,
+    timestamp: new Date().toISOString()
+  };
+
+  await messagesCollection().insertOne(newMessage);
+
+  delete newMessage._id;
+
+  res.status(201).json(newMessage);
+});
+
+// Delete a message. Allowed for the sender, an admin
+// of the channel's group, or the Super Admin.
+// ?userId= (required)
+app.delete('/api/messages/:messageId', async (req, res) => {
+
+  const user = await getUserById(req.query.userId);
+
+  if (!user) {
+    return res.status(404).json({
+      message: 'User not found'
+    });
+  }
+
+  const message = await messagesCollection().findOne(
+    { id: Number(req.params.messageId) },
+    WITHOUT_MONGO_ID
+  );
+
+  if (!message) {
+    return res.status(404).json({
+      message: 'Message not found'
+    });
+  }
+
+  let allowed =
+    message.userId === user.id ||
+    user.role === 'superAdmin';
+
+  if (!allowed) {
+    const group = await getGroupById(message.groupId);
+    allowed = Boolean(group) && group.adminIds.includes(user.id);
+  }
+
+  if (!allowed) {
+    return res.status(403).json({
+      message: 'You can only delete your own messages'
+    });
+  }
+
+  await messagesCollection().deleteOne({ id: message.id });
+
+  // Only log moderation, not people tidying up
+  // their own messages.
+  if (message.userId !== user.id) {
+    await logAudit('message.deleted', user.id, {
+      messageId: message.id,
+      channelId: message.channelId,
+      authorId: message.userId
+    });
+  }
+
+  res.json({
+    message: 'Message deleted'
+  });
+});
+
+// ====================================================
 // AUDIT LOG
 // ====================================================
 

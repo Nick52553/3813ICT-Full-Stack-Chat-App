@@ -149,6 +149,12 @@ async function seed() {
   );
   await db.collection('requests').createIndex({ status: 1 });
   await db.collection('messages').createIndex(
+    { id: 1 },
+    { unique: true }
+  );
+
+  // Serves "latest messages in channel X" queries.
+  await db.collection('messages').createIndex(
     { channelId: 1, timestamp: 1 }
   );
 
