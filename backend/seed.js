@@ -38,13 +38,49 @@ function readJson(file) {
   }
 }
 
+// The Phase 1 JSON can reference users that were deleted
+// before delete-user cleaned up memberships. Drop those ids
+// so a new user who reuses the id doesn't inherit them.
+const USER_ID_FIELDS = {
+  groups: ['adminIds', 'memberIds'],
+  channels: ['memberIds']
+};
+
+function removeStaleUserIds(name, docs, validUserIds) {
+
+  const fields = USER_ID_FIELDS[name] || [];
+
+  for (const doc of docs) {
+    for (const field of fields) {
+
+      const ids = Array.isArray(doc[field]) ? doc[field] : [];
+      const kept = ids.filter(id => validUserIds.has(id));
+
+      if (kept.length !== ids.length) {
+        console.log(
+          `  ${name} ${doc.id}: removed missing users ` +
+          `${ids.filter(id => !validUserIds.has(id))} from ${field}`
+        );
+      }
+
+      doc[field] = kept;
+    }
+  }
+}
+
 async function seed() {
 
   const db = await connectDb();
 
+  const validUserIds = new Set(
+    readJson(SOURCES.users).map(user => user.id)
+  );
+
   for (const [name, file] of Object.entries(SOURCES)) {
 
     const docs = readJson(file);
+
+    removeStaleUserIds(name, docs, validUserIds);
 
     await db.collection(name).drop().catch(() => {});
 
@@ -102,7 +138,15 @@ async function seed() {
     }
   );
 
-  await db.collection('channels').createIndex({ groupId: 1 });
+  // Channel names only need to be unique within a group.
+  // This index also serves "all channels in group X" queries.
+  await db.collection('channels').createIndex(
+    { groupId: 1, name: 1 },
+    {
+      unique: true,
+      collation: { locale: 'en', strength: 2 }
+    }
+  );
   await db.collection('requests').createIndex({ status: 1 });
   await db.collection('messages').createIndex(
     { channelId: 1, timestamp: 1 }

@@ -23,7 +23,6 @@ const DATA_DIR = path.join(
   'DATA FOR THE APP PHASE 1'
 );
 
-const CHANNELS_FILE = path.join(DATA_DIR, 'channels.json');
 const REQUESTS_FILE = path.join(DATA_DIR, 'requests.json');
 const AUDIT_FILE = path.join(DATA_DIR, 'audit.json');
 
@@ -183,6 +182,42 @@ async function insertGroup({ name, description, ageLimit, adminIds, memberIds })
   delete newGroup._id;
 
   return newGroup;
+}
+
+// ====================================================
+// MONGODB CHANNEL HELPERS
+// ====================================================
+
+function channelsCollection() {
+  return getDb().collection('channels');
+}
+
+// Insert a new channel with the next numeric id.
+// Returns null if the group already has a channel
+// with that name.
+async function insertChannel({ groupId, name, description, memberIds }) {
+
+  const newChannel = {
+    id: await getNextDbId('channels'),
+    groupId: Number(groupId),
+    name: name.trim(),
+    description: description || '',
+    memberIds: Array.isArray(memberIds) ? memberIds.map(Number) : []
+  };
+
+  try {
+    await channelsCollection().insertOne(newChannel);
+  } catch (error) {
+    // 11000 = duplicate key (unique groupId + name index)
+    if (error.code === 11000) {
+      return null;
+    }
+    throw error;
+  }
+
+  delete newChannel._id;
+
+  return newChannel;
 }
 
 // ====================================================
@@ -586,21 +621,28 @@ app.post('/api/groups/:groupId/admins/demote', async (req, res) => {
 // ====================================================
 
 // Get all channels
-app.get('/api/channels', (req, res) => {
-  res.json(readJson(CHANNELS_FILE));
+app.get('/api/channels', async (req, res) => {
+
+  const channels = await channelsCollection()
+    .find({}, WITHOUT_MONGO_ID)
+    .sort({ id: 1 })
+    .toArray();
+
+  res.json(channels);
 });
 
 // Get group channels
-app.get('/api/groups/:groupId/channels', (req, res) => {
+app.get('/api/groups/:groupId/channels', async (req, res) => {
 
-  const groupId = Number(req.params.groupId);
-  const channels = readJson(CHANNELS_FILE);
-
-  res.json(
-    channels.filter(
-      channel => channel.groupId === groupId
+  const channels = await channelsCollection()
+    .find(
+      { groupId: Number(req.params.groupId) },
+      WITHOUT_MONGO_ID
     )
-  );
+    .sort({ id: 1 })
+    .toArray();
+
+  res.json(channels);
 });
 
 // Create channel
@@ -626,8 +668,6 @@ app.post('/api/channels', async (req, res) => {
     });
   }
 
-  const channels = readJson(CHANNELS_FILE);
-
   const group = await getGroupById(numericGroupId);
 
   if (!group) {
@@ -636,35 +676,17 @@ app.post('/api/channels', async (req, res) => {
     });
   }
 
-  const duplicate = channels.find(
-    channel =>
-      channel.groupId === numericGroupId &&
-      channel.name.toLowerCase() ===
-      name.trim().toLowerCase()
-  );
+  const newChannel = await insertChannel({
+    groupId: numericGroupId,
+    name,
+    description,
+    memberIds
+  });
 
-  if (duplicate) {
+  if (!newChannel) {
     return res.status(409).json({
       message:
         'A channel with that name already exists'
-    });
-  }
-
-  const newChannel = {
-    id: getNextId(channels),
-    groupId: numericGroupId,
-    name: name.trim(),
-    description: description || '',
-    memberIds: Array.isArray(memberIds)
-      ? memberIds
-      : []
-  };
-
-  channels.push(newChannel);
-
-  if (!writeJson(CHANNELS_FILE, channels)) {
-    return res.status(500).json({
-      message: 'Could not save channel'
     });
   }
 
@@ -677,29 +699,25 @@ app.post('/api/channels/:channelId/members', async (req, res) => {
   const channelId = Number(req.params.channelId);
   const userId = Number(req.body.userId);
 
-  const channels = readJson(CHANNELS_FILE);
-
-  const channel = channels.find(
-    c => c.id === channelId
-  );
-
   const user = await getUserById(userId);
 
-  if (!channel || !user) {
+  if (!user) {
     return res.status(404).json({
       message:
         'Channel or user not found'
     });
   }
 
-  if (!channel.memberIds.includes(userId)) {
-    channel.memberIds.push(userId);
-  }
+  const channel = await channelsCollection().findOneAndUpdate(
+    { id: channelId },
+    { $addToSet: { memberIds: userId } },
+    { returnDocument: 'after', ...WITHOUT_MONGO_ID }
+  );
 
-  if (!writeJson(CHANNELS_FILE, channels)) {
-    return res.status(500).json({
+  if (!channel) {
+    return res.status(404).json({
       message:
-        'Could not update channel membership'
+        'Channel or user not found'
     });
   }
 
@@ -1059,9 +1077,6 @@ app.put('/api/requests/:requestId', async (req, res) => {
   // APPROVE
   // --------------------------------------------------
 
-  const channels =
-    readJson(CHANNELS_FILE);
-
   // --------------------------------------------------
   // APPROVE NEW GROUP
   // --------------------------------------------------
@@ -1100,52 +1115,18 @@ app.put('/api/requests/:requestId', async (req, res) => {
       });
     }
 
-    const duplicate =
-      channels.find(
-        channel =>
-          channel.groupId ===
-            request.groupId &&
-          channel.name.toLowerCase() ===
-            request.name.toLowerCase()
-      );
+    const newChannel = await insertChannel({
+      groupId: request.groupId,
+      name: request.name,
+      description: request.description,
+      // All group members get channel access
+      memberIds: group.memberIds
+    });
 
-    if (duplicate) {
+    if (!newChannel) {
       return res.status(409).json({
         message:
           'A channel with this name already exists'
-      });
-    }
-
-    const newChannel = {
-
-      id:
-        getNextId(channels),
-
-      groupId:
-        request.groupId,
-
-      name:
-        request.name,
-
-      description:
-        request.description,
-
-      // All group members get channel access
-      memberIds:
-        [...group.memberIds]
-    };
-
-    channels.push(newChannel);
-
-    if (
-      !writeJson(
-        CHANNELS_FILE,
-        channels
-      )
-    ) {
-      return res.status(500).json({
-        message:
-          'Could not create requested channel'
       });
     }
   }
@@ -1216,42 +1197,10 @@ app.put('/api/requests/:requestId', async (req, res) => {
 
     // Remove the user from channels
     // belonging to this group.
-    const updatedChannels =
-      channels.map(
-        channel => {
-
-          if (
-            channel.groupId ===
-            request.groupId
-          ) {
-
-            return {
-              ...channel,
-
-              memberIds:
-                channel.memberIds.filter(
-                  id =>
-                    id !== targetUserId
-                )
-            };
-          }
-
-          return channel;
-
-        }
-      );
-
-    if (
-      !writeJson(
-        CHANNELS_FILE,
-        updatedChannels
-      )
-    ) {
-      return res.status(500).json({
-        message:
-          'Could not update channel memberships'
-      });
-    }
+    await channelsCollection().updateMany(
+      { groupId: request.groupId },
+      { $pull: { memberIds: targetUserId } }
+    );
   }
 
   // --------------------------------------------------
@@ -1334,14 +1283,10 @@ app.delete('/api/users/:userId', async (req, res) => {
     }
   );
 
-  const channels = readJson(CHANNELS_FILE);
-
-  const updatedChannels = channels.map(channel => ({
-    ...channel,
-    memberIds: (channel.memberIds || []).filter(id => id !== userId)
-  }));
-
-  writeJson(CHANNELS_FILE, updatedChannels);
+  await channelsCollection().updateMany(
+    {},
+    { $pull: { memberIds: userId } }
+  );
 
   logAudit('user.deleted', requesterId, {
     deletedUserId: userId,
