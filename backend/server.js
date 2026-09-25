@@ -1,11 +1,9 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const cors = require('cors');
 const {
   connectDb,
   getDb,
-  getNextId: getNextDbId
+  getNextId
 } = require('./db');
 
 const app = express();
@@ -15,73 +13,35 @@ app.use(cors());
 app.use(express.json());
 
 // ====================================================
-// DATA FILES
+// AUDIT LOG HELPERS
 // ====================================================
 
-const DATA_DIR = path.join(
-  __dirname,
-  'DATA FOR THE APP PHASE 1'
-);
+function auditCollection() {
+  return getDb().collection('audit');
+}
 
-const AUDIT_FILE = path.join(DATA_DIR, 'audit.json');
+// Record an action in the audit log. The action it
+// describes has already happened, so a failed write
+// is logged to the console rather than failing the
+// whole request.
+async function logAudit(action, actorId, details) {
 
-// ====================================================
-// HELPER FUNCTIONS
-// ====================================================
-
-function readJson(file) {
   try {
-    return JSON.parse(
-      fs.readFileSync(file, 'utf8')
-    );
+    await auditCollection().insertOne({
+      id: await getNextId('audit'),
+      action,
+      actorId: actorId !== undefined && actorId !== null
+        ? Number(actorId)
+        : null,
+      details: details || {},
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
-    console.error(`Error reading ${file}:`, error.message);
-    return [];
-  }
-}
-
-function writeJson(file, data) {
-  try {
-    fs.writeFileSync(
-      file,
-      JSON.stringify(data, null, 2),
-      'utf8'
+    console.error(
+      `Could not write audit entry "${action}":`,
+      error.message
     );
-    return true;
-  } catch (error) {
-    console.error(`Error writing ${file}:`, error.message);
-    return false;
   }
-}
-
-function getNextId(items) {
-  if (!items.length) {
-    return 1;
-  }
-
-  return Math.max(
-    ...items.map(item => Number(item.id) || 0)
-  ) + 1;
-}
-
-function logAudit(action, actorId, details) {
-
-  const entries = readJson(AUDIT_FILE);
-
-  const validEntries =
-    Array.isArray(entries) ? entries : [];
-
-  validEntries.push({
-    id: getNextId(validEntries),
-    action,
-    actorId: actorId !== undefined && actorId !== null
-      ? Number(actorId)
-      : null,
-    details: details || {},
-    timestamp: new Date().toISOString()
-  });
-
-  writeJson(AUDIT_FILE, validEntries);
 }
 
 // ====================================================
@@ -113,7 +73,7 @@ function toSafeUser(user) {
 async function insertUser({ username, password, age, role }) {
 
   const newUser = {
-    id: await getNextDbId('users'),
+    id: await getNextId('users'),
     username: username.trim(),
     password,
     age: Number(age) || 0,
@@ -159,7 +119,7 @@ async function getGroupById(groupId) {
 async function insertGroup({ name, description, ageLimit, adminIds, memberIds }) {
 
   const newGroup = {
-    id: await getNextDbId('groups'),
+    id: await getNextId('groups'),
     name: name.trim(),
     description: description || '',
     ageLimit: Number(ageLimit) || 0,
@@ -197,7 +157,7 @@ function channelsCollection() {
 async function insertChannel({ groupId, name, description, memberIds }) {
 
   const newChannel = {
-    id: await getNextDbId('channels'),
+    id: await getNextId('channels'),
     groupId: Number(groupId),
     name: name.trim(),
     description: description || '',
@@ -341,7 +301,7 @@ app.post('/api/bootstrap', async (req, res) => {
     });
   }
 
-  logAudit('user.bootstrapped', newUser.id, {
+  await logAudit('user.bootstrapped', newUser.id, {
     username: newUser.username
   });
 
@@ -423,7 +383,7 @@ app.post('/api/users', async (req, res) => {
     });
   }
 
-  logAudit('user.created', newUser.id, {
+  await logAudit('user.created', newUser.id, {
     username: newUser.username,
     role: newUser.role
   });
@@ -564,7 +524,7 @@ app.post('/api/groups/:groupId/admins', async (req, res) => {
     );
   }
 
-  logAudit('group.admin.promoted', userId, {
+  await logAudit('group.admin.promoted', userId, {
     groupId,
     groupName: group.name,
     username: user.username
@@ -614,7 +574,7 @@ app.post('/api/groups/:groupId/admins/demote', async (req, res) => {
     );
   }
 
-  logAudit('group.admin.demoted', userId, {
+  await logAudit('group.admin.demoted', userId, {
     groupId,
     groupName: group.name,
     username: user.username
@@ -903,7 +863,7 @@ app.post('/api/requests', async (req, res) => {
   const newRequest = {
 
     id:
-      await getNextDbId('requests'),
+      await getNextId('requests'),
 
     type,
 
@@ -1197,7 +1157,7 @@ app.put('/api/requests/:requestId', async (req, res) => {
 
   if (status === 'denied') {
 
-    logAudit('request.denied', reviewer.id, {
+    await logAudit('request.denied', reviewer.id, {
       requestId: reviewed.id,
       requestType: reviewed.type
     });
@@ -1231,7 +1191,7 @@ app.put('/api/requests/:requestId', async (req, res) => {
     });
   }
 
-  logAudit('request.approved', reviewer.id, {
+  await logAudit('request.approved', reviewer.id, {
     requestId: reviewed.id,
     requestType: reviewed.type,
     groupId: reviewed.groupId,
@@ -1288,7 +1248,7 @@ app.delete('/api/users/:userId', async (req, res) => {
     { $pull: { memberIds: userId } }
   );
 
-  logAudit('user.deleted', requesterId, {
+  await logAudit('user.deleted', requesterId, {
     deletedUserId: userId,
     deletedUsername: target.username
   });
@@ -1314,14 +1274,13 @@ app.get('/api/audit', async (req, res) => {
     });
   }
 
-  const entries = readJson(AUDIT_FILE);
+  // Newest first
+  const entries = await auditCollection()
+    .find({}, WITHOUT_MONGO_ID)
+    .sort({ id: -1 })
+    .toArray();
 
-  const validEntries =
-    Array.isArray(entries) ? entries : [];
-
-  res.json(
-    [...validEntries].reverse()
-  );
+  res.json(entries);
 });
 
 // ====================================================
@@ -1335,10 +1294,6 @@ connectDb()
 
       console.log(
         `Server running on http://localhost:${PORT}`
-      );
-
-      console.log(
-        `Data directory: ${DATA_DIR}`
       );
 
     });
