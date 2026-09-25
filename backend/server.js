@@ -23,7 +23,6 @@ const DATA_DIR = path.join(
   'DATA FOR THE APP PHASE 1'
 );
 
-const GROUPS_FILE = path.join(DATA_DIR, 'groups.json');
 const CHANNELS_FILE = path.join(DATA_DIR, 'channels.json');
 const REQUESTS_FILE = path.join(DATA_DIR, 'requests.json');
 const AUDIT_FILE = path.join(DATA_DIR, 'audit.json');
@@ -137,10 +136,60 @@ async function insertUser({ username, password, age, role }) {
 }
 
 // ====================================================
+// MONGODB GROUP HELPERS
+// ====================================================
+
+// Leave Mongo's internal _id out of documents
+// sent back to the client.
+const WITHOUT_MONGO_ID = {
+  projection: { _id: 0 }
+};
+
+function groupsCollection() {
+  return getDb().collection('groups');
+}
+
+async function getGroupById(groupId) {
+  return groupsCollection().findOne(
+    { id: Number(groupId) },
+    WITHOUT_MONGO_ID
+  );
+}
+
+// Insert a new group with the next numeric id.
+// Returns null if the group name is already taken.
+async function insertGroup({ name, description, ageLimit, adminIds, memberIds }) {
+
+  const newGroup = {
+    id: await getNextDbId('groups'),
+    name: name.trim(),
+    description: description || '',
+    ageLimit: Number(ageLimit) || 0,
+    adminIds: Array.isArray(adminIds) ? adminIds.map(Number) : [],
+    memberIds: Array.isArray(memberIds) ? memberIds.map(Number) : []
+  };
+
+  try {
+    await groupsCollection().insertOne(newGroup);
+  } catch (error) {
+    // 11000 = duplicate key (unique group name index)
+    if (error.code === 11000) {
+      return null;
+    }
+    throw error;
+  }
+
+  // insertOne adds _id to the object - strip it.
+  delete newGroup._id;
+
+  return newGroup;
+}
+
+// ====================================================
 // CHECK REQUEST PERMISSION
 // ====================================================
 
-function canReviewRequest(request, reviewer) {
+async function canReviewRequest(request, reviewer) {
 
   if (!reviewer) {
     return false;
@@ -161,11 +210,7 @@ function canReviewRequest(request, reviewer) {
     request.type === 'join'
   ) {
 
-    const groups = readJson(GROUPS_FILE);
-
-    const group = groups.find(
-      g => g.id === Number(request.groupId)
-    );
+    const group = await getGroupById(request.groupId);
 
     if (!group) {
       return false;
@@ -349,18 +394,20 @@ app.post('/api/users', async (req, res) => {
 // ====================================================
 
 // Get groups
-app.get('/api/groups', (req, res) => {
-  res.json(readJson(GROUPS_FILE));
+app.get('/api/groups', async (req, res) => {
+
+  const groups = await groupsCollection()
+    .find({}, WITHOUT_MONGO_ID)
+    .sort({ id: 1 })
+    .toArray();
+
+  res.json(groups);
 });
 
 // Get one group
-app.get('/api/groups/:groupId', (req, res) => {
+app.get('/api/groups/:groupId', async (req, res) => {
 
-  const groups = readJson(GROUPS_FILE);
-
-  const group = groups.find(
-    g => g.id === Number(req.params.groupId)
-  );
+  const group = await getGroupById(req.params.groupId);
 
   if (!group) {
     return res.status(404).json({
@@ -372,7 +419,7 @@ app.get('/api/groups/:groupId', (req, res) => {
 });
 
 // Create group
-app.post('/api/groups', (req, res) => {
+app.post('/api/groups', async (req, res) => {
 
   const {
     name,
@@ -388,38 +435,17 @@ app.post('/api/groups', (req, res) => {
     });
   }
 
-  const groups = readJson(GROUPS_FILE);
+  const newGroup = await insertGroup({
+    name,
+    description,
+    ageLimit,
+    adminIds,
+    memberIds
+  });
 
-  const duplicate = groups.find(
-    group =>
-      group.name.toLowerCase() ===
-      name.trim().toLowerCase()
-  );
-
-  if (duplicate) {
+  if (!newGroup) {
     return res.status(409).json({
       message: 'A group with that name already exists'
-    });
-  }
-
-  const newGroup = {
-    id: getNextId(groups),
-    name: name.trim(),
-    description: description || '',
-    ageLimit: Number(ageLimit) || 0,
-    adminIds: Array.isArray(adminIds)
-      ? adminIds
-      : [],
-    memberIds: Array.isArray(memberIds)
-      ? memberIds
-      : []
-  };
-
-  groups.push(newGroup);
-
-  if (!writeJson(GROUPS_FILE, groups)) {
-    return res.status(500).json({
-      message: 'Could not save group'
     });
   }
 
@@ -432,19 +458,7 @@ app.post('/api/groups/:groupId/members', async (req, res) => {
   const groupId = Number(req.params.groupId);
   const userId = Number(req.body.userId);
 
-  const groups = readJson(GROUPS_FILE);
-
-  const group = groups.find(
-    g => g.id === groupId
-  );
-
   const user = await getUserById(userId);
-
-  if (!group) {
-    return res.status(404).json({
-      message: 'Group not found'
-    });
-  }
 
   if (!user) {
     return res.status(404).json({
@@ -452,13 +466,15 @@ app.post('/api/groups/:groupId/members', async (req, res) => {
     });
   }
 
-  if (!group.memberIds.includes(userId)) {
-    group.memberIds.push(userId);
-  }
+  const group = await groupsCollection().findOneAndUpdate(
+    { id: groupId },
+    { $addToSet: { memberIds: userId } },
+    { returnDocument: 'after', ...WITHOUT_MONGO_ID }
+  );
 
-  if (!writeJson(GROUPS_FILE, groups)) {
-    return res.status(500).json({
-      message: 'Could not update group membership'
+  if (!group) {
+    return res.status(404).json({
+      message: 'Group not found'
     });
   }
 
@@ -471,31 +487,29 @@ app.post('/api/groups/:groupId/admins', async (req, res) => {
   const groupId = Number(req.params.groupId);
   const userId = Number(req.body.userId);
 
-  const groups = readJson(GROUPS_FILE);
-
-  const group = groups.find(
-    g => g.id === groupId
-  );
-
   const user = await getUserById(userId);
 
-  if (!group || !user) {
+  if (!user) {
     return res.status(404).json({
       message: 'Group or user not found'
     });
   }
 
-  if (!group.memberIds.includes(userId)) {
-    group.memberIds.push(userId);
-  }
+  // Admins are always members too.
+  const group = await groupsCollection().findOneAndUpdate(
+    { id: groupId },
+    {
+      $addToSet: {
+        memberIds: userId,
+        adminIds: userId
+      }
+    },
+    { returnDocument: 'after', ...WITHOUT_MONGO_ID }
+  );
 
-  if (!group.adminIds.includes(userId)) {
-    group.adminIds.push(userId);
-  }
-
-  if (!writeJson(GROUPS_FILE, groups)) {
-    return res.status(500).json({
-      message: 'Could not assign group admin'
+  if (!group) {
+    return res.status(404).json({
+      message: 'Group or user not found'
     });
   }
 
@@ -523,35 +537,33 @@ app.post('/api/groups/:groupId/admins/demote', async (req, res) => {
   const groupId = Number(req.params.groupId);
   const userId = Number(req.body.userId);
 
-  const groups = readJson(GROUPS_FILE);
-
-  const group = groups.find(
-    g => g.id === groupId
-  );
-
   const user = await getUserById(userId);
 
-  if (!group || !user) {
+  if (!user) {
     return res.status(404).json({
       message: 'Group or user not found'
     });
   }
 
-  group.adminIds = group.adminIds.filter(
-    id => id !== userId
+  const group = await groupsCollection().findOneAndUpdate(
+    { id: groupId },
+    { $pull: { adminIds: userId } },
+    { returnDocument: 'after', ...WITHOUT_MONGO_ID }
   );
 
-  if (!writeJson(GROUPS_FILE, groups)) {
-    return res.status(500).json({
-      message: 'Could not demote group admin'
+  if (!group) {
+    return res.status(404).json({
+      message: 'Group or user not found'
     });
   }
 
   // Drop the global groupAdmin role only if this user
   // is not an admin of any other group.
-  const stillAdminElsewhere = groups.some(
-    g => Array.isArray(g.adminIds) && g.adminIds.includes(userId)
-  );
+  // (Matching a value against an array field checks
+  // whether the array contains it.)
+  const stillAdminElsewhere = await groupsCollection().findOne({
+    adminIds: userId
+  });
 
   if (!stillAdminElsewhere && user.role === 'groupAdmin') {
     await usersCollection().updateOne(
@@ -592,7 +604,7 @@ app.get('/api/groups/:groupId/channels', (req, res) => {
 });
 
 // Create channel
-app.post('/api/channels', (req, res) => {
+app.post('/api/channels', async (req, res) => {
 
   const {
     groupId,
@@ -614,12 +626,9 @@ app.post('/api/channels', (req, res) => {
     });
   }
 
-  const groups = readJson(GROUPS_FILE);
   const channels = readJson(CHANNELS_FILE);
 
-  const group = groups.find(
-    g => g.id === numericGroupId
-  );
+  const group = await getGroupById(numericGroupId);
 
   if (!group) {
     return res.status(404).json({
@@ -735,12 +744,20 @@ app.get('/api/requests', async (req, res) => {
       });
     }
 
+    // canReviewRequest is async, so resolve every
+    // check first - a pending Promise is always truthy.
+    const allowed = await Promise.all(
+      filtered.map(
+        request =>
+          canReviewRequest(
+            request,
+            reviewer
+          )
+      )
+    );
+
     filtered = filtered.filter(
-      request =>
-        canReviewRequest(
-          request,
-          reviewer
-        )
+      (_request, index) => allowed[index]
     );
   }
 
@@ -808,13 +825,8 @@ app.post('/api/requests', async (req, res) => {
       });
     }
 
-    const groups =
-      readJson(GROUPS_FILE);
-
     const group =
-      groups.find(
-        g => g.id === Number(groupId)
-      );
+      await getGroupById(groupId);
 
     if (!group) {
       return res.status(404).json({
@@ -992,10 +1004,10 @@ app.put('/api/requests/:requestId', async (req, res) => {
   // IMPORTANT:
   // Verify the reviewer can actually review it.
   if (
-    !canReviewRequest(
+    !(await canReviewRequest(
       request,
       reviewer
-    )
+    ))
   ) {
     return res.status(403).json({
       message:
@@ -1047,9 +1059,6 @@ app.put('/api/requests/:requestId', async (req, res) => {
   // APPROVE
   // --------------------------------------------------
 
-  const groups =
-    readJson(GROUPS_FILE);
-
   const channels =
     readJson(CHANNELS_FILE);
 
@@ -1059,52 +1068,18 @@ app.put('/api/requests/:requestId', async (req, res) => {
 
   if (request.type === 'group') {
 
-    const duplicate =
-      groups.find(
-        group =>
-          group.name.toLowerCase() ===
-          request.name.toLowerCase()
-      );
+    const newGroup = await insertGroup({
+      name: request.name,
+      description: request.description,
+      ageLimit: request.ageLimit,
+      adminIds: [],
+      memberIds: [request.requesterId]
+    });
 
-    if (duplicate) {
+    if (!newGroup) {
       return res.status(409).json({
         message:
           'A group with this name already exists'
-      });
-    }
-
-    const newGroup = {
-
-      id:
-        getNextId(groups),
-
-      name:
-        request.name,
-
-      description:
-        request.description,
-
-      ageLimit:
-        request.ageLimit,
-
-      adminIds:
-        [],
-
-      memberIds:
-        [request.requesterId]
-    };
-
-    groups.push(newGroup);
-
-    if (
-      !writeJson(
-        GROUPS_FILE,
-        groups
-      )
-    ) {
-      return res.status(500).json({
-        message:
-          'Could not create requested group'
       });
     }
   }
@@ -1116,10 +1091,7 @@ app.put('/api/requests/:requestId', async (req, res) => {
   if (request.type === 'channel') {
 
     const group =
-      groups.find(
-        g =>
-          g.id === request.groupId
-      );
+      await getGroupById(request.groupId);
 
     if (!group) {
       return res.status(404).json({
@@ -1184,36 +1156,16 @@ app.put('/api/requests/:requestId', async (req, res) => {
 
   if (request.type === 'join') {
 
-    const group =
-      groups.find(
-        g =>
-          g.id === request.groupId
+    const result =
+      await groupsCollection().updateOne(
+        { id: request.groupId },
+        { $addToSet: { memberIds: request.requesterId } }
       );
 
-    if (!group) {
+    if (result.matchedCount === 0) {
       return res.status(404).json({
         message:
           'Group for join request not found'
-      });
-    }
-
-    if (!Array.isArray(group.memberIds)) {
-      group.memberIds = [];
-    }
-
-    if (!group.memberIds.includes(request.requesterId)) {
-      group.memberIds.push(request.requesterId);
-    }
-
-    if (
-      !writeJson(
-        GROUPS_FILE,
-        groups
-      )
-    ) {
-      return res.status(500).json({
-        message:
-          'Could not add user to group'
       });
     }
   }
@@ -1228,10 +1180,7 @@ app.put('/api/requests/:requestId', async (req, res) => {
   ) {
 
     const group =
-      groups.find(
-        g =>
-          g.id === request.groupId
-      );
+      await getGroupById(request.groupId);
 
     if (!group) {
       return res.status(404).json({
@@ -1254,40 +1203,16 @@ app.put('/api/requests/:requestId', async (req, res) => {
       });
     }
 
-    // Remove from group members
-    group.memberIds =
-      group.memberIds.filter(
-        id =>
-          id !== targetUserId
-      );
-
-    // Remove group administrator status
-    group.adminIds =
-      group.adminIds.filter(
-        id =>
-          id !== targetUserId
-      );
-
-    const groupIndex =
-      groups.findIndex(
-        g =>
-          g.id === request.groupId
-      );
-
-    groups[groupIndex] =
-      group;
-
-    if (
-      !writeJson(
-        GROUPS_FILE,
-        groups
-      )
-    ) {
-      return res.status(500).json({
-        message:
-          'Could not remove user from group'
-      });
-    }
+    // Remove from group members and admins
+    await groupsCollection().updateOne(
+      { id: request.groupId },
+      {
+        $pull: {
+          memberIds: targetUserId,
+          adminIds: targetUserId
+        }
+      }
+    );
 
     // Remove the user from channels
     // belonging to this group.
@@ -1399,15 +1324,15 @@ app.delete('/api/users/:userId', async (req, res) => {
   }
 
   // Strip the deleted user from every group and channel.
-  const groups = readJson(GROUPS_FILE);
-
-  const updatedGroups = groups.map(group => ({
-    ...group,
-    memberIds: (group.memberIds || []).filter(id => id !== userId),
-    adminIds: (group.adminIds || []).filter(id => id !== userId)
-  }));
-
-  writeJson(GROUPS_FILE, updatedGroups);
+  await groupsCollection().updateMany(
+    {},
+    {
+      $pull: {
+        memberIds: userId,
+        adminIds: userId
+      }
+    }
+  );
 
   const channels = readJson(CHANNELS_FILE);
 

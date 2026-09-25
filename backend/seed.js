@@ -94,6 +94,14 @@ async function seed() {
     }
   );
 
+  await db.collection('groups').createIndex(
+    { name: 1 },
+    {
+      unique: true,
+      collation: { locale: 'en', strength: 2 }
+    }
+  );
+
   await db.collection('channels').createIndex({ groupId: 1 });
   await db.collection('requests').createIndex({ status: 1 });
   await db.collection('messages').createIndex(
