@@ -23,7 +23,6 @@ const DATA_DIR = path.join(
   'DATA FOR THE APP PHASE 1'
 );
 
-const REQUESTS_FILE = path.join(DATA_DIR, 'requests.json');
 const AUDIT_FILE = path.join(DATA_DIR, 'audit.json');
 
 // ====================================================
@@ -218,6 +217,14 @@ async function insertChannel({ groupId, name, description, memberIds }) {
   delete newChannel._id;
 
   return newChannel;
+}
+
+// ====================================================
+// MONGODB REQUEST HELPERS
+// ====================================================
+
+function requestsCollection() {
+  return getDb().collection('requests');
 }
 
 // ====================================================
@@ -737,16 +744,21 @@ app.get('/api/requests', async (req, res) => {
     requesterId
   } = req.query;
 
-  const requests = readJson(REQUESTS_FILE);
-
-  let filtered = requests;
+  // Let MongoDB do the simple filtering.
+  const query = {};
 
   if (status) {
-    filtered = filtered.filter(
-      request =>
-        request.status === status
-    );
+    query.status = status;
   }
+
+  if (requesterId) {
+    query.requesterId = Number(requesterId);
+  }
+
+  let filtered = await requestsCollection()
+    .find(query, WITHOUT_MONGO_ID)
+    .sort({ id: 1 })
+    .toArray();
 
   // IMPORTANT:
   // Only return requests that this reviewer
@@ -776,15 +788,6 @@ app.get('/api/requests', async (req, res) => {
 
     filtered = filtered.filter(
       (_request, index) => allowed[index]
-    );
-  }
-
-  if (requesterId) {
-
-    filtered = filtered.filter(
-      request =>
-        request.requesterId ===
-        Number(requesterId)
     );
   }
 
@@ -897,13 +900,10 @@ app.post('/api/requests', async (req, res) => {
     }
   }
 
-  const requests =
-    readJson(REQUESTS_FILE);
-
   const newRequest = {
 
     id:
-      getNextId(requests),
+      await getNextDbId('requests'),
 
     type,
 
@@ -945,18 +945,10 @@ app.post('/api/requests', async (req, res) => {
       null
   };
 
-  requests.push(newRequest);
+  await requestsCollection().insertOne(newRequest);
 
-  if (
-    !writeJson(
-      REQUESTS_FILE,
-      requests
-    )
-  ) {
-    return res.status(500).json({
-      message: 'Could not save request'
-    });
-  }
+  // insertOne adds _id to the object - strip it.
+  delete newRequest._id;
 
   res.status(201).json(newRequest);
 });
@@ -964,6 +956,155 @@ app.post('/api/requests', async (req, res) => {
 // ====================================================
 // APPROVE / DENY REQUEST
 // ====================================================
+
+// Apply the changes an approved request asks for.
+// Returns null on success, or { status, message }
+// describing why it could not be applied.
+async function applyApprovedRequest(request) {
+
+  // --------------------------------------------------
+  // APPROVE NEW GROUP
+  // --------------------------------------------------
+
+  if (request.type === 'group') {
+
+    const newGroup = await insertGroup({
+      name: request.name,
+      description: request.description,
+      ageLimit: request.ageLimit,
+      adminIds: [],
+      memberIds: [request.requesterId]
+    });
+
+    if (!newGroup) {
+      return {
+        status: 409,
+        message: 'A group with this name already exists'
+      };
+    }
+  }
+
+  // --------------------------------------------------
+  // APPROVE NEW CHANNEL
+  // --------------------------------------------------
+
+  if (request.type === 'channel') {
+
+    const group =
+      await getGroupById(request.groupId);
+
+    if (!group) {
+      return {
+        status: 404,
+        message: 'Group for channel request not found'
+      };
+    }
+
+    const newChannel = await insertChannel({
+      groupId: request.groupId,
+      name: request.name,
+      description: request.description,
+      // All group members get channel access
+      memberIds: group.memberIds
+    });
+
+    if (!newChannel) {
+      return {
+        status: 409,
+        message: 'A channel with this name already exists'
+      };
+    }
+  }
+
+  // --------------------------------------------------
+  // APPROVE JOIN
+  // --------------------------------------------------
+
+  if (request.type === 'join') {
+
+    const result =
+      await groupsCollection().updateOne(
+        { id: request.groupId },
+        { $addToSet: { memberIds: request.requesterId } }
+      );
+
+    if (result.matchedCount === 0) {
+      return {
+        status: 404,
+        message: 'Group for join request not found'
+      };
+    }
+  }
+
+  // --------------------------------------------------
+  // APPROVE BAN / REMOVAL
+  // --------------------------------------------------
+
+  if (
+    request.type === 'ban' ||
+    request.type === 'groupRemoval'
+  ) {
+
+    const group =
+      await getGroupById(request.groupId);
+
+    if (!group) {
+      return {
+        status: 404,
+        message: 'Group not found'
+      };
+    }
+
+    const targetUserId =
+      request.targetUserId;
+
+    // Cannot remove the final group admin
+    if (
+      group.adminIds.includes(targetUserId) &&
+      group.adminIds.length === 1
+    ) {
+      return {
+        status: 400,
+        message:
+          'This user is the only group admin. A successor must be appointed first.'
+      };
+    }
+
+    // Remove from group members and admins
+    await groupsCollection().updateOne(
+      { id: request.groupId },
+      {
+        $pull: {
+          memberIds: targetUserId,
+          adminIds: targetUserId
+        }
+      }
+    );
+
+    // Remove the user from channels
+    // belonging to this group.
+    await channelsCollection().updateMany(
+      { groupId: request.groupId },
+      { $pull: { memberIds: targetUserId } }
+    );
+  }
+
+  return null;
+}
+
+// Undo a review claim so the request can be tried again.
+async function revertToPending(requestId) {
+  await requestsCollection().updateOne(
+    { id: requestId },
+    {
+      $set: {
+        status: 'pending',
+        reviewedAt: null,
+        reviewedBy: null
+      }
+    }
+  );
+}
 
 app.put('/api/requests/:requestId', async (req, res) => {
 
@@ -994,23 +1135,17 @@ app.put('/api/requests/:requestId', async (req, res) => {
     });
   }
 
-  const requests =
-    readJson(REQUESTS_FILE);
-
-  const requestIndex =
-    requests.findIndex(
-      request =>
-        request.id === requestId
+  const request =
+    await requestsCollection().findOne(
+      { id: requestId },
+      WITHOUT_MONGO_ID
     );
 
-  if (requestIndex === -1) {
+  if (!request) {
     return res.status(404).json({
       message: 'Request not found'
     });
   }
-
-  const request =
-    requests[requestIndex];
 
   if (request.status !== 'pending') {
     return res.status(400).json({
@@ -1033,43 +1168,43 @@ app.put('/api/requests/:requestId', async (req, res) => {
     });
   }
 
+  // Claim the request. The filter only matches while it
+  // is still pending, so if two admins review at the same
+  // moment, only one of them gets it.
+  const reviewed =
+    await requestsCollection().findOneAndUpdate(
+      { id: requestId, status: 'pending' },
+      {
+        $set: {
+          status,
+          reviewedAt: new Date().toISOString(),
+          reviewedBy: reviewer.id
+        }
+      },
+      { returnDocument: 'after', ...WITHOUT_MONGO_ID }
+    );
+
+  if (!reviewed) {
+    return res.status(400).json({
+      message:
+        'This request has already been reviewed'
+    });
+  }
+
   // --------------------------------------------------
   // DENY
   // --------------------------------------------------
 
   if (status === 'denied') {
 
-    request.status = 'denied';
-
-    request.reviewedAt =
-      new Date().toISOString();
-
-    request.reviewedBy =
-      reviewer.id;
-
-    requests[requestIndex] =
-      request;
-
-    if (
-      !writeJson(
-        REQUESTS_FILE,
-        requests
-      )
-    ) {
-      return res.status(500).json({
-        message:
-          'Could not update request'
-      });
-    }
-
     logAudit('request.denied', reviewer.id, {
-      requestId: request.id,
-      requestType: request.type
+      requestId: reviewed.id,
+      requestType: reviewed.type
     });
 
     return res.json({
       message: 'Request denied',
-      request
+      request: reviewed
     });
   }
 
@@ -1077,171 +1212,36 @@ app.put('/api/requests/:requestId', async (req, res) => {
   // APPROVE
   // --------------------------------------------------
 
-  // --------------------------------------------------
-  // APPROVE NEW GROUP
-  // --------------------------------------------------
+  // If the changes can't be applied, put the request
+  // back to pending so it can be reviewed again.
+  let failure;
 
-  if (request.type === 'group') {
-
-    const newGroup = await insertGroup({
-      name: request.name,
-      description: request.description,
-      ageLimit: request.ageLimit,
-      adminIds: [],
-      memberIds: [request.requesterId]
-    });
-
-    if (!newGroup) {
-      return res.status(409).json({
-        message:
-          'A group with this name already exists'
-      });
-    }
+  try {
+    failure = await applyApprovedRequest(reviewed);
+  } catch (error) {
+    await revertToPending(requestId);
+    throw error;
   }
 
-  // --------------------------------------------------
-  // APPROVE NEW CHANNEL
-  // --------------------------------------------------
+  if (failure) {
+    await revertToPending(requestId);
 
-  if (request.type === 'channel') {
-
-    const group =
-      await getGroupById(request.groupId);
-
-    if (!group) {
-      return res.status(404).json({
-        message:
-          'Group for channel request not found'
-      });
-    }
-
-    const newChannel = await insertChannel({
-      groupId: request.groupId,
-      name: request.name,
-      description: request.description,
-      // All group members get channel access
-      memberIds: group.memberIds
-    });
-
-    if (!newChannel) {
-      return res.status(409).json({
-        message:
-          'A channel with this name already exists'
-      });
-    }
-  }
-
-  // --------------------------------------------------
-  // APPROVE JOIN
-  // --------------------------------------------------
-
-  if (request.type === 'join') {
-
-    const result =
-      await groupsCollection().updateOne(
-        { id: request.groupId },
-        { $addToSet: { memberIds: request.requesterId } }
-      );
-
-    if (result.matchedCount === 0) {
-      return res.status(404).json({
-        message:
-          'Group for join request not found'
-      });
-    }
-  }
-
-  // --------------------------------------------------
-  // APPROVE BAN / REMOVAL
-  // --------------------------------------------------
-
-  if (
-    request.type === 'ban' ||
-    request.type === 'groupRemoval'
-  ) {
-
-    const group =
-      await getGroupById(request.groupId);
-
-    if (!group) {
-      return res.status(404).json({
-        message:
-          'Group not found'
-      });
-    }
-
-    const targetUserId =
-      request.targetUserId;
-
-    // Cannot remove the final group admin
-    if (
-      group.adminIds.includes(targetUserId) &&
-      group.adminIds.length === 1
-    ) {
-      return res.status(400).json({
-        message:
-          'This user is the only group admin. A successor must be appointed first.'
-      });
-    }
-
-    // Remove from group members and admins
-    await groupsCollection().updateOne(
-      { id: request.groupId },
-      {
-        $pull: {
-          memberIds: targetUserId,
-          adminIds: targetUserId
-        }
-      }
-    );
-
-    // Remove the user from channels
-    // belonging to this group.
-    await channelsCollection().updateMany(
-      { groupId: request.groupId },
-      { $pull: { memberIds: targetUserId } }
-    );
-  }
-
-  // --------------------------------------------------
-  // MARK REQUEST APPROVED
-  // --------------------------------------------------
-
-  request.status =
-    'approved';
-
-  request.reviewedAt =
-    new Date().toISOString();
-
-  request.reviewedBy =
-    reviewer.id;
-
-  requests[requestIndex] =
-    request;
-
-  if (
-    !writeJson(
-      REQUESTS_FILE,
-      requests
-    )
-  ) {
-    return res.status(500).json({
-      message:
-        'Could not update request status'
+    return res.status(failure.status).json({
+      message: failure.message
     });
   }
 
   logAudit('request.approved', reviewer.id, {
-    requestId: request.id,
-    requestType: request.type,
-    groupId: request.groupId,
-    targetUserId: request.targetUserId
+    requestId: reviewed.id,
+    requestType: reviewed.type,
+    groupId: reviewed.groupId,
+    targetUserId: reviewed.targetUserId
   });
 
   res.json({
     message:
       'Request approved and changes applied',
-    request
+    request: reviewed
   });
 });
 
