@@ -171,6 +171,14 @@
 
     </button>
 
+    <button
+      type="button"
+      (click)="demoteAdmin()">
+
+      Demote Admin
+
+    </button>
+
   </section>
 
 
@@ -222,6 +230,29 @@
           <strong>Description:</strong>
           {{ request.description }}
 
+        </p>
+
+        <p>
+          <strong>Requested by User ID:</strong>
+          {{ request.requesterId }}
+        </p>
+
+      </div>
+
+
+      <!-- JOIN REQUEST -->
+
+      <div
+        *ngIf="request.type === 'join'"
+        class="request-information">
+
+        <h3>
+          Join Group Request
+        </h3>
+
+        <p>
+          <strong>Group ID:</strong>
+          {{ request.groupId }}
         </p>
 
         <p>

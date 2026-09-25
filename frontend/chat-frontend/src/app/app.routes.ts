@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 
 import { Login } from './components/login/login';
+import { Register } from './components/register/register';
+import { Signup } from './components/signup/signup';
 import { Dashboard } from './components/dashboard/dashboard';
 import { Profile } from './components/profile/profile';
 import { UserManagement } from './components/user-management/user-management';
@@ -11,7 +13,9 @@ import { ChannelManagement } from './components/channel-management/channel-manag
 import { ChatWindow } from './components/chat-window/chat-window';
 import { authGuard } from './auth.guard';
 import { superAdminGuard, groupAdminGuard} from './role.guard';
+import { registerGuard, loginGuard } from './bootstrap.guard';
 import { Requests } from './components/requests/requests';
+import { AuditLog } from './components/audit-log/audit-log';
 
 export const routes: Routes = [
 
@@ -23,7 +27,19 @@ export const routes: Routes = [
 
   {
     path: 'login',
-    component: Login
+    component: Login,
+    canActivate: [loginGuard]
+  },
+
+  {
+    path: 'register',
+    component: Register,
+    canActivate: [registerGuard]
+  },
+
+  {
+    path: 'signup',
+    component: Signup
   },
 
   {
@@ -77,7 +93,13 @@ export const routes: Routes = [
     path: 'requests',
     component: Requests,
     canActivate: [authGuard]
-},  
+},
+
+  {
+    path: 'audit-log',
+    component: AuditLog,
+    canActivate: [superAdminGuard]
+  },
 
   {
     path: '**',

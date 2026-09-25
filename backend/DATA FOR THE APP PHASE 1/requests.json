@@ -103,5 +103,20 @@
     "createdAt": "2026-09-04T02:39:13.979Z",
     "reviewedAt": "2026-09-04T02:40:11.725Z",
     "reviewedBy": 1
+  },
+  {
+    "id": 8,
+    "type": "join",
+    "requesterId": 1,
+    "groupId": 1,
+    "targetUserId": null,
+    "name": "",
+    "description": "",
+    "ageLimit": 0,
+    "reason": "",
+    "status": "approved",
+    "createdAt": "2026-09-21T05:21:45.861Z",
+    "reviewedAt": "2026-09-21T05:21:51.719Z",
+    "reviewedBy": 1
   }
 ]

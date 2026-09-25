@@ -73,12 +73,3 @@
 }
 .login-card button:hover { background: var(--accent-dim); }
 .login-card .error { text-align: center; margin-top: 1rem; }
-
-.signup-link {
-  text-align: center;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin: 1.5rem 0 0;
-}
-.signup-link a { color: var(--accent); text-decoration: none; }
-.signup-link a:hover { text-decoration: underline; }

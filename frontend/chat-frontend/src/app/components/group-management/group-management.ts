@@ -144,13 +144,15 @@ export class GroupManagement implements OnInit {
         // Group Admin deals with:
         // - channel requests
         // - ban/removal requests
+        // - join requests
 
         this.pendingRequests =
           requests.filter(
             request =>
               request.type === 'channel' ||
               request.type === 'ban' ||
-              request.type === 'groupRemoval'
+              request.type === 'groupRemoval' ||
+              request.type === 'join'
           );
 
       },
@@ -327,6 +329,59 @@ export class GroupManagement implements OnInit {
         this.error =
           error.error?.message ||
           'Could not assign group admin.';
+
+      }
+
+    });
+
+  }
+
+  // --------------------------------------------------
+  // DEMOTE GROUP ADMIN
+  // --------------------------------------------------
+
+  demoteAdmin() {
+
+    this.message = '';
+    this.error = '';
+
+    if (
+      this.selectedGroupId === null ||
+      this.selectedAdminId === null
+    ) {
+
+      this.error =
+        'Please select both a group and a user.';
+
+      return;
+    }
+
+    this.http.post<any>(
+      `http://localhost:3000/api/groups/${this.selectedGroupId}/admins/demote`,
+      {
+        userId: this.selectedAdminId
+      }
+    ).subscribe({
+
+      next: () => {
+
+        this.message =
+          'Group admin demoted successfully.';
+
+        this.loadGroups();
+
+      },
+
+      error: error => {
+
+        console.error(
+          'Could not demote admin:',
+          error
+        );
+
+        this.error =
+          error.error?.message ||
+          'Could not demote group admin.';
 
       }
 

@@ -1,0 +1,54 @@
+<div class="audit-page">
+
+  <app-navbar></app-navbar>
+
+  <main class="audit-container">
+
+    <div class="page-header">
+      <div>
+        <h1>Audit Log</h1>
+        <p>
+          A record of every significant action taken across the system.
+        </p>
+      </div>
+    </div>
+
+    <p
+      *ngIf="error"
+      class="error-message">
+      {{ error }}
+    </p>
+
+    <p
+      *ngIf="!error && entries.length === 0"
+      class="empty-message">
+      No audit entries recorded yet.
+    </p>
+
+    <table
+      class="audit-table"
+      *ngIf="entries.length > 0">
+
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Action</th>
+          <th>Actor ID</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let entry of entries">
+          <td>{{ entry.timestamp }}</td>
+          <td>{{ entry.action }}</td>
+          <td>{{ entry.actorId }}</td>
+          <td>{{ entry.details | json }}</td>
+        </tr>
+      </tbody>
+
+    </table>
+
+  </main>
+
+</div>

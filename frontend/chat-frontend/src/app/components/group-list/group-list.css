@@ -37,6 +37,9 @@
   margin-bottom: 1rem;
 }
 
+.success-message { color: #4caf50; margin-top: 1.25rem; }
+.error-message { color: #e05c5c; margin-top: 1.25rem; }
+
 .group-actions { display: flex; gap: 0.6rem; }
 
 .primary-button, .secondary-button, .open-button, .back-button {

@@ -141,6 +141,37 @@ export class UserManagement implements OnInit {
 
   }
 
+  deleteUser(userId: number) {
+
+    this.message = '';
+    this.error = '';
+
+    this.http.delete<any>(
+      `http://localhost:3000/api/users/${userId}?requesterId=${this.currentUser.id}`
+    ).subscribe({
+
+      next: () => {
+
+        this.message = 'User deleted successfully.';
+
+        this.loadUsers();
+
+      },
+
+      error: error => {
+
+        console.error(error);
+
+        this.error =
+          error.error?.message ||
+          'Could not delete user.';
+
+      }
+
+    });
+
+  }
+
   loadGroupRequests() {
 
     this.http.get<any[]>(

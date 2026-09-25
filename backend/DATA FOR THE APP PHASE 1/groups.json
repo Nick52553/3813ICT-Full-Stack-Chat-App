@@ -10,7 +10,8 @@
     ],
     "memberIds": [
       2,
-      3
+      3,
+      1
     ]
   },
   {
@@ -18,9 +19,7 @@
     "name": "Study Group",
     "description": "University study and discussion.",
     "ageLimit": 17,
-    "adminIds": [
-      3
-    ],
+    "adminIds": [],
     "memberIds": [
       2,
       3

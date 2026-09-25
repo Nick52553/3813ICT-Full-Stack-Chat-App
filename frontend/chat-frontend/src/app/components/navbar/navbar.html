@@ -40,6 +40,12 @@
       User Management
     </a>
 
+    <a
+      *ngIf="currentUser.role === 'superAdmin'"
+      routerLink="/audit-log">
+      Audit Log
+    </a>
+
   </div>
 
   <div class="navbar-right">

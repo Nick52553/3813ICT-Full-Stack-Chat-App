@@ -22,6 +22,7 @@ const USERS_FILE = path.join(DATA_DIR, 'user.json');
 const GROUPS_FILE = path.join(DATA_DIR, 'groups.json');
 const CHANNELS_FILE = path.join(DATA_DIR, 'channels.json');
 const REQUESTS_FILE = path.join(DATA_DIR, 'requests.json');
+const AUDIT_FILE = path.join(DATA_DIR, 'audit.json');
 
 // ====================================================
 // HELPER FUNCTIONS
@@ -62,6 +63,26 @@ function getNextId(items) {
   ) + 1;
 }
 
+function logAudit(action, actorId, details) {
+
+  const entries = readJson(AUDIT_FILE);
+
+  const validEntries =
+    Array.isArray(entries) ? entries : [];
+
+  validEntries.push({
+    id: getNextId(validEntries),
+    action,
+    actorId: actorId !== undefined && actorId !== null
+      ? Number(actorId)
+      : null,
+    details: details || {},
+    timestamp: new Date().toISOString()
+  });
+
+  writeJson(AUDIT_FILE, validEntries);
+}
+
 function getUserById(userId) {
   const users = readJson(USERS_FILE);
 
@@ -91,7 +112,8 @@ function canReviewRequest(request, reviewer) {
   if (
     request.type === 'channel' ||
     request.type === 'ban' ||
-    request.type === 'groupRemoval'
+    request.type === 'groupRemoval' ||
+    request.type === 'join'
   ) {
 
     const groups = readJson(GROUPS_FILE);
@@ -129,6 +151,92 @@ app.get('/', (req, res) => {
   res.json({
     message: 'Chat application backend is running!',
     status: 'online'
+  });
+});
+
+// ====================================================
+// BOOTSTRAP SUPER ADMIN
+// ====================================================
+
+// Check whether the app still needs its first Super Admin.
+app.get('/api/bootstrap-status', (req, res) => {
+
+  const users = readJson(USERS_FILE);
+
+  const hasSuperAdmin = users.some(
+    user => user.role === 'superAdmin'
+  );
+
+  res.json({
+    needsBootstrap: !hasSuperAdmin
+  });
+});
+
+// Create the first Super Admin. Only works while no
+// Super Admin exists yet - locks itself out after that.
+app.post('/api/bootstrap', (req, res) => {
+
+  const {
+    username,
+    password,
+    age
+  } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({
+      message: 'Username and password are required'
+    });
+  }
+
+  const users = readJson(USERS_FILE);
+
+  const hasSuperAdmin = users.some(
+    user => user.role === 'superAdmin'
+  );
+
+  if (hasSuperAdmin) {
+    return res.status(403).json({
+      message: 'Super Admin has already been set up'
+    });
+  }
+
+  const duplicate = users.find(
+    user =>
+      user.username.toLowerCase() ===
+      username.trim().toLowerCase()
+  );
+
+  if (duplicate) {
+    return res.status(409).json({
+      message: 'Username already exists'
+    });
+  }
+
+  const newUser = {
+    id: getNextId(users),
+    username: username.trim(),
+    password,
+    age: Number(age) || 0,
+    role: 'superAdmin'
+  };
+
+  users.push(newUser);
+
+  if (!writeJson(USERS_FILE, users)) {
+    return res.status(500).json({
+      message: 'Could not save user'
+    });
+  }
+
+  logAudit('user.bootstrapped', newUser.id, {
+    username: newUser.username
+  });
+
+  res.status(201).json({
+    id: newUser.id,
+    username: newUser.username,
+    age: newUser.age,
+    role: newUser.role
   });
 });
 
@@ -235,6 +343,11 @@ app.post('/api/users', (req, res) => {
       message: 'Could not save user'
     });
   }
+
+  logAudit('user.created', newUser.id, {
+    username: newUser.username,
+    role: newUser.role
+  });
 
   res.status(201).json({
     id: newUser.id,
@@ -404,6 +517,84 @@ app.post('/api/groups/:groupId/admins', (req, res) => {
       message: 'Could not assign group admin'
     });
   }
+
+  // Reflect the promotion on the user's global role,
+  // unless they are already the Super Admin.
+  if (user.role === 'user') {
+
+    user.role = 'groupAdmin';
+
+    if (!writeJson(USERS_FILE, users)) {
+      return res.status(500).json({
+        message: 'Could not update user role'
+      });
+    }
+  }
+
+  logAudit('group.admin.promoted', userId, {
+    groupId,
+    groupName: group.name,
+    username: user.username
+  });
+
+  res.json(group);
+});
+
+// Demote a group admin back to a regular member
+app.post('/api/groups/:groupId/admins/demote', (req, res) => {
+
+  const groupId = Number(req.params.groupId);
+  const userId = Number(req.body.userId);
+
+  const groups = readJson(GROUPS_FILE);
+  const users = readJson(USERS_FILE);
+
+  const group = groups.find(
+    g => g.id === groupId
+  );
+
+  const user = users.find(
+    u => u.id === userId
+  );
+
+  if (!group || !user) {
+    return res.status(404).json({
+      message: 'Group or user not found'
+    });
+  }
+
+  group.adminIds = group.adminIds.filter(
+    id => id !== userId
+  );
+
+  if (!writeJson(GROUPS_FILE, groups)) {
+    return res.status(500).json({
+      message: 'Could not demote group admin'
+    });
+  }
+
+  // Drop the global groupAdmin role only if this user
+  // is not an admin of any other group.
+  const stillAdminElsewhere = groups.some(
+    g => Array.isArray(g.adminIds) && g.adminIds.includes(userId)
+  );
+
+  if (!stillAdminElsewhere && user.role === 'groupAdmin') {
+
+    user.role = 'user';
+
+    if (!writeJson(USERS_FILE, users)) {
+      return res.status(500).json({
+        message: 'Could not update user role'
+      });
+    }
+  }
+
+  logAudit('group.admin.demoted', userId, {
+    groupId,
+    groupName: group.name,
+    username: user.username
+  });
 
   res.json(group);
 });
@@ -625,7 +816,8 @@ app.post('/api/requests', (req, res) => {
     'group',
     'channel',
     'ban',
-    'groupRemoval'
+    'groupRemoval',
+    'join'
   ];
 
   if (!allowedTypes.includes(type)) {
@@ -638,7 +830,8 @@ app.post('/api/requests', (req, res) => {
   if (
     type === 'channel' ||
     type === 'ban' ||
-    type === 'groupRemoval'
+    type === 'groupRemoval' ||
+    type === 'join'
   ) {
 
     if (groupId === undefined) {
@@ -660,6 +853,28 @@ app.post('/api/requests', (req, res) => {
       return res.status(404).json({
         message: 'Group not found'
       });
+    }
+
+    if (type === 'join') {
+
+      if (
+        Array.isArray(group.memberIds) &&
+        group.memberIds.includes(requester.id)
+      ) {
+        return res.status(409).json({
+          message: 'You are already a member of this group'
+        });
+      }
+
+      if (
+        group.ageLimit &&
+        Number(requester.age) < Number(group.ageLimit)
+      ) {
+        return res.status(403).json({
+          message:
+            `You must be at least ${group.ageLimit} years old to join this group`
+        });
+      }
     }
   }
 
@@ -850,6 +1065,11 @@ app.put('/api/requests/:requestId', (req, res) => {
       });
     }
 
+    logAudit('request.denied', reviewer.id, {
+      requestId: request.id,
+      requestType: request.type
+    });
+
     return res.json({
       message: 'Request denied',
       request
@@ -987,6 +1207,46 @@ app.put('/api/requests/:requestId', (req, res) => {
       return res.status(500).json({
         message:
           'Could not create requested channel'
+      });
+    }
+  }
+
+  // --------------------------------------------------
+  // APPROVE JOIN
+  // --------------------------------------------------
+
+  if (request.type === 'join') {
+
+    const group =
+      groups.find(
+        g =>
+          g.id === request.groupId
+      );
+
+    if (!group) {
+      return res.status(404).json({
+        message:
+          'Group for join request not found'
+      });
+    }
+
+    if (!Array.isArray(group.memberIds)) {
+      group.memberIds = [];
+    }
+
+    if (!group.memberIds.includes(request.requesterId)) {
+      group.memberIds.push(request.requesterId);
+    }
+
+    if (
+      !writeJson(
+        GROUPS_FILE,
+        groups
+      )
+    ) {
+      return res.status(500).json({
+        message:
+          'Could not add user to group'
       });
     }
   }
@@ -1130,11 +1390,111 @@ app.put('/api/requests/:requestId', (req, res) => {
     });
   }
 
+  logAudit('request.approved', reviewer.id, {
+    requestId: request.id,
+    requestType: request.type,
+    groupId: request.groupId,
+    targetUserId: request.targetUserId
+  });
+
   res.json({
     message:
       'Request approved and changes applied',
     request
   });
+});
+
+// ====================================================
+// DELETE USER
+// ====================================================
+
+app.delete('/api/users/:userId', (req, res) => {
+
+  const userId = Number(req.params.userId);
+  const requesterId = Number(req.query.requesterId);
+
+  const requester = getUserById(requesterId);
+
+  if (!requester || requester.role !== 'superAdmin') {
+    return res.status(403).json({
+      message: 'Only the Super Admin can delete users'
+    });
+  }
+
+  const users = readJson(USERS_FILE);
+
+  const target = users.find(u => u.id === userId);
+
+  if (!target) {
+    return res.status(404).json({
+      message: 'User not found'
+    });
+  }
+
+  const remainingUsers = users.filter(
+    u => u.id !== userId
+  );
+
+  if (!writeJson(USERS_FILE, remainingUsers)) {
+    return res.status(500).json({
+      message: 'Could not delete user'
+    });
+  }
+
+  // Strip the deleted user from every group and channel.
+  const groups = readJson(GROUPS_FILE);
+
+  const updatedGroups = groups.map(group => ({
+    ...group,
+    memberIds: (group.memberIds || []).filter(id => id !== userId),
+    adminIds: (group.adminIds || []).filter(id => id !== userId)
+  }));
+
+  writeJson(GROUPS_FILE, updatedGroups);
+
+  const channels = readJson(CHANNELS_FILE);
+
+  const updatedChannels = channels.map(channel => ({
+    ...channel,
+    memberIds: (channel.memberIds || []).filter(id => id !== userId)
+  }));
+
+  writeJson(CHANNELS_FILE, updatedChannels);
+
+  logAudit('user.deleted', requesterId, {
+    deletedUserId: userId,
+    deletedUsername: target.username
+  });
+
+  res.json({
+    message: 'User deleted'
+  });
+});
+
+// ====================================================
+// AUDIT LOG
+// ====================================================
+
+app.get('/api/audit', (req, res) => {
+
+  const requesterId = Number(req.query.requesterId);
+
+  const requester = getUserById(requesterId);
+
+  if (!requester || requester.role !== 'superAdmin') {
+    return res.status(403).json({
+      message: 'Only the Super Admin can view the audit log'
+    });
+  }
+
+  const entries = readJson(AUDIT_FILE);
+
+  const validEntries =
+    Array.isArray(entries) ? entries : [];
+
+  res.json(
+    [...validEntries].reverse()
+  );
 });
 
 // ====================================================

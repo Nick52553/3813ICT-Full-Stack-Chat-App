@@ -3,9 +3,10 @@
   <div class="login-card">
 
     <h1>Chat Application</h1>
-    <h2>Login</h2>
+    <h2>Bootstrap Super Admin</h2>
+    <p>No users exist yet. Register the first account to become the Super Admin.</p>
 
-    <form (ngSubmit)="login()">
+    <form (ngSubmit)="register()">
 
       <div class="form-group">
         <label for="username">Username</label>
@@ -33,20 +34,27 @@
         />
       </div>
 
+      <div class="form-group">
+        <label for="age">Age</label>
+
+        <input
+          id="age"
+          type="number"
+          name="age"
+          [(ngModel)]="age"
+          placeholder="Enter age"
+        />
+      </div>
+
       <button type="submit">
-        Login
+        Register Super Admin
       </button>
 
-      <p *ngIf="loginFailed" class="error">
-        Invalid username or password.
+      <p *ngIf="registerFailed" class="error">
+        {{ registerMessage }}
       </p>
 
     </form>
-
-    <p class="signup-link">
-      Don't have an account?
-      <a routerLink="/signup">Sign up</a>
-    </p>
 
   </div>
 

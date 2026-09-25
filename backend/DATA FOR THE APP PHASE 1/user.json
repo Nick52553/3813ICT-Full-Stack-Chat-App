@@ -1,44 +1,23 @@
 [
   {
     "id": 1,
-    "username": "Allan",
-    "password": "allan123",
-    "age": 25,
+    "username": "supernick",
+    "password": "nick1234",
+    "age": 21,
     "role": "superAdmin"
   },
   {
     "id": 2,
-    "username": "Nick",
-    "password": "nick123",
+    "username": "bobby@bobby.com",
+    "password": "bobby123",
     "age": 21,
     "role": "user"
   },
   {
     "id": 3,
-    "username": "Jordan",
-    "password": "jordan123",
-    "age": 23,
+    "username": "ben@ben.com",
+    "password": "ben123",
+    "age": 37,
     "role": "groupAdmin"
-  },
-  {
-    "id": 4,
-    "username": "Bobby",
-    "password": "Bobby123",
-    "age": 18,
-    "role": "user"
-  },
-  {
-    "id": 5,
-    "username": "David",
-    "password": "David123",
-    "age": 16,
-    "role": "user"
-  },
-  {
-    "id": 6,
-    "username": "Joe",
-    "password": "Joe12345678",
-    "age": 18,
-    "role": "user"
   }
 ]

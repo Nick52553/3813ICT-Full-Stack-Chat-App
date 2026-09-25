@@ -33,6 +33,15 @@
 
         <button
           type="button"
+          [class.active]="requestType === 'join'"
+          (click)="requestType = 'join'">
+
+          Join Group
+
+        </button>
+
+        <button
+          type="button"
           [class.active]="requestType === 'channel'"
           (click)="requestType = 'channel'">
 
@@ -94,6 +103,53 @@
 
         <button type="submit">
           Submit Group Request
+        </button>
+
+      </form>
+
+    </section>
+
+    <!-- JOIN REQUEST -->
+
+    <section
+      class="request-card"
+      *ngIf="requestType === 'join'">
+
+      <h2>Request to Join a Group</h2>
+
+      <p class="description">
+        A Group Admin will review this request. Groups with a
+        minimum age requirement will reject underage requests.
+      </p>
+
+      <form (ngSubmit)="submitRequest()">
+
+        <label>Group</label>
+
+        <select
+          name="joinGroup"
+          [(ngModel)]="selectedGroup"
+          required>
+
+          <option value="">
+            Select a group
+          </option>
+
+          <option
+            *ngFor="let group of groups"
+            [value]="group.id">
+
+            {{ group.name }}
+            <ng-container *ngIf="group.ageLimit">
+              (min age {{ group.ageLimit }})
+            </ng-container>
+
+          </option>
+
+        </select>
+
+        <button type="submit">
+          Submit Join Request
         </button>
 
       </form>

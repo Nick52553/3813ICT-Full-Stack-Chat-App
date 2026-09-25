@@ -1,0 +1,146 @@
+[
+  {
+    "id": 1,
+    "action": "group.admin.promoted",
+    "actorId": 3,
+    "details": {
+      "groupId": 1,
+      "groupName": "Gaming Group",
+      "username": "ben@ben.com"
+    },
+    "timestamp": "2026-09-21T05:15:38.263Z"
+  },
+  {
+    "id": 2,
+    "action": "group.admin.promoted",
+    "actorId": 3,
+    "details": {
+      "groupId": 1,
+      "groupName": "Gaming Group",
+      "username": "ben@ben.com"
+    },
+    "timestamp": "2026-09-21T05:15:46.090Z"
+  },
+  {
+    "id": 3,
+    "action": "group.admin.promoted",
+    "actorId": 3,
+    "details": {
+      "groupId": 1,
+      "groupName": "Gaming Group",
+      "username": "ben@ben.com"
+    },
+    "timestamp": "2026-09-21T05:15:47.232Z"
+  },
+  {
+    "id": 4,
+    "action": "group.admin.promoted",
+    "actorId": 3,
+    "details": {
+      "groupId": 1,
+      "groupName": "Gaming Group",
+      "username": "ben@ben.com"
+    },
+    "timestamp": "2026-09-21T05:15:47.385Z"
+  },
+  {
+    "id": 5,
+    "action": "group.admin.promoted",
+    "actorId": 3,
+    "details": {
+      "groupId": 1,
+      "groupName": "Gaming Group",
+      "username": "ben@ben.com"
+    },
+    "timestamp": "2026-09-21T05:15:47.540Z"
+  },
+  {
+    "id": 6,
+    "action": "group.admin.promoted",
+    "actorId": 3,
+    "details": {
+      "groupId": 1,
+      "groupName": "Gaming Group",
+      "username": "ben@ben.com"
+    },
+    "timestamp": "2026-09-21T05:15:47.692Z"
+  },
+  {
+    "id": 7,
+    "action": "group.admin.promoted",
+    "actorId": 3,
+    "details": {
+      "groupId": 1,
+      "groupName": "Gaming Group",
+      "username": "ben@ben.com"
+    },
+    "timestamp": "2026-09-21T05:15:47.846Z"
+  },
+  {
+    "id": 8,
+    "action": "group.admin.demoted",
+    "actorId": 3,
+    "details": {
+      "groupId": 2,
+      "groupName": "Study Group",
+      "username": "ben@ben.com"
+    },
+    "timestamp": "2026-09-21T05:16:24.008Z"
+  },
+  {
+    "id": 9,
+    "action": "group.admin.demoted",
+    "actorId": 3,
+    "details": {
+      "groupId": 2,
+      "groupName": "Study Group",
+      "username": "ben@ben.com"
+    },
+    "timestamp": "2026-09-21T05:16:25.870Z"
+  },
+  {
+    "id": 10,
+    "action": "group.admin.demoted",
+    "actorId": 3,
+    "details": {
+      "groupId": 2,
+      "groupName": "Study Group",
+      "username": "ben@ben.com"
+    },
+    "timestamp": "2026-09-21T05:16:28.959Z"
+  },
+  {
+    "id": 11,
+    "action": "group.admin.demoted",
+    "actorId": 3,
+    "details": {
+      "groupId": 2,
+      "groupName": "Study Group",
+      "username": "ben@ben.com"
+    },
+    "timestamp": "2026-09-21T05:16:29.298Z"
+  },
+  {
+    "id": 12,
+    "action": "group.admin.demoted",
+    "actorId": 3,
+    "details": {
+      "groupId": 2,
+      "groupName": "Study Group",
+      "username": "ben@ben.com"
+    },
+    "timestamp": "2026-09-21T05:16:29.426Z"
+  },
+  {
+    "id": 13,
+    "action": "request.approved",
+    "actorId": 1,
+    "details": {
+      "requestId": 8,
+      "requestType": "join",
+      "groupId": 1,
+      "targetUserId": null
+    },
+    "timestamp": "2026-09-21T05:21:51.720Z"
+  }
+]

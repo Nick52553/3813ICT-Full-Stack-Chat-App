@@ -25,6 +25,7 @@ export class GroupList implements OnInit {
   );
 
   message = '';
+  error = '';
 
   constructor(
     private http: HttpClient
@@ -68,14 +69,41 @@ export class GroupList implements OnInit {
 
   requestToJoin(group: any) {
 
+    this.message = '';
+    this.error = '';
+
     if (this.isMember(group)) {
       return;
     }
 
-    this.message =
-      `Your request to join "${group.name}" has been submitted.`;
+    this.http.post<any>(
+      'http://localhost:3000/api/requests',
+      {
+        type: 'join',
+        requesterId: this.currentUser.id,
+        groupId: group.id
+      }
+    ).subscribe({
 
-   
+      next: () => {
+
+        this.message =
+          `Your request to join "${group.name}" has been submitted.`;
+
+      },
+
+      error: error => {
+
+        console.error('Could not submit join request:', error);
+
+        this.error =
+          error.error?.message ||
+          `Could not submit a request to join "${group.name}".`;
+
+      }
+
+    });
+
   }
 
 }

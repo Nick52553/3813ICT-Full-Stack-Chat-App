@@ -43,8 +43,10 @@
             </a>
 
             <button
+              *ngIf="!isMember(group)"
               type="button"
-              class="secondary-button">
+              class="secondary-button"
+              (click)="requestToJoin(group)">
               Request to Join
             </button>
 
@@ -55,6 +57,18 @@
       </div>
 
     </div>
+
+    <p
+      *ngIf="message"
+      class="success-message">
+      {{ message }}
+    </p>
+
+    <p
+      *ngIf="error"
+      class="error-message">
+      {{ error }}
+    </p>
 
   </main>
 

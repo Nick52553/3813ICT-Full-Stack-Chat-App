@@ -131,6 +131,33 @@ export class Requests implements OnInit {
     }
 
     // ------------------------------
+    // JOIN REQUEST
+    // ------------------------------
+
+    if (this.requestType === 'join') {
+
+      if (!this.selectedGroup) {
+
+        this.error =
+          'Please select a group to join.';
+
+        return;
+      }
+
+      request = {
+
+        type: 'join',
+
+        requesterId:
+          this.currentUser.id,
+
+        groupId:
+          Number(this.selectedGroup)
+
+      };
+    }
+
+    // ------------------------------
     // CHANNEL REQUEST
     // ------------------------------
 
