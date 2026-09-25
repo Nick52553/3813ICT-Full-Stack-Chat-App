@@ -49,8 +49,32 @@ async function closeDb() {
   db = null;
 }
 
+// ====================================================
+// NUMERIC IDS
+// ====================================================
+
+// The frontend uses numeric ids (1, 2, 3...), so each
+// collection keeps a counter in the "counters" collection.
+// $inc is atomic, so two requests can never get the same id.
+async function getNextId(collectionName) {
+
+  const counter = await getDb()
+    .collection('counters')
+    .findOneAndUpdate(
+      { _id: collectionName },
+      { $inc: { seq: 1 } },
+      {
+        upsert: true,
+        returnDocument: 'after'
+      }
+    );
+
+  return counter.seq;
+}
+
 module.exports = {
   connectDb,
   getDb,
-  closeDb
+  closeDb,
+  getNextId
 };
