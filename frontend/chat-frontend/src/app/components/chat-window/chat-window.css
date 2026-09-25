@@ -54,3 +54,4 @@
 .back-button:hover { background: var(--panel-raised); border-color: var(--accent); }
 
 .phase-label { align-self: flex-start; margin: 15px 0 5px; padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-muted); font-family: var(--font-display); font-size: 9px; letter-spacing: 0.08em; }
+.chat-error { color: var(--danger); }

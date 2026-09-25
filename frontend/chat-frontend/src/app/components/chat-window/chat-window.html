@@ -35,6 +35,18 @@
         </div>
 
         <div
+          class="system-message"
+          *ngIf="!errorMessage && messages.length === 0">
+          No messages yet. Say hello!
+        </div>
+
+        <div
+          class="system-message chat-error"
+          *ngIf="errorMessage">
+          {{ errorMessage }}
+        </div>
+
+        <div
           class="message"
           *ngFor="let message of messages">
 
@@ -51,7 +63,7 @@
               </strong>
 
               <span>
-                {{ message.time }}
+                {{ formatTime(message.timestamp) }}
               </span>
 
             </div>
@@ -60,9 +72,9 @@
               {{ message.text }}
             </p>
 
-            <!-- Only show delete for your own messages -->
+            <!-- Own messages, or any message for group admins / Super Admin -->
             <button
-              *ngIf="message.username === currentUser.username"
+              *ngIf="canDelete(message)"
               type="button"
               class="delete-message-button"
               (click)="deleteMessage(message.id)">
@@ -98,6 +110,7 @@
         <button
           type="button"
           class="send-button"
+          [disabled]="sending"
           (click)="sendMessage()">
 
           Send

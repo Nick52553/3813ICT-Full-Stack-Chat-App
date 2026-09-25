@@ -2,7 +2,20 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { Navbar } from '../navbar/navbar';
+
+interface ChatMessage {
+  id: number;
+  channelId: number;
+  groupId: number;
+  userId: number;
+  username: string;
+  text: string;
+  timestamp: string;
+}
+
+const API = 'http://localhost:3000/api';
 
 @Component({
   selector: 'app-chat-window',
@@ -24,36 +37,25 @@ export class ChatWindow implements OnInit {
   groupName = '';
   channelName = '';
 
+  // Used to decide who can delete other people's messages.
+  groupAdminIds: number[] = [];
+
   messageText = '';
+
+  messages: ChatMessage[] = [];
+
+  errorMessage = '';
+
+  sending = false;
 
   currentUser: any = JSON.parse(
     localStorage.getItem('currentUser') ||
     '{"username":"User","role":"user"}'
   );
 
-  messages = [
-    {
-      id: 1,
-      username: 'Allan',
-      text: 'Welcome everyone to the General channel!',
-      time: '10:32 AM'
-    },
-    {
-      id: 2,
-      username: 'Nick',
-      text: 'Thanks! Looking forward to chatting.',
-      time: '10:34 AM'
-    },
-    {
-      id: 3,
-      username: 'Jordan',
-      text: 'Has anyone played the new update yet?',
-      time: '10:36 AM'
-    }
-  ];
-
   constructor(
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private http: HttpClient
   ) {}
 
   ngOnInit() {
@@ -64,67 +66,120 @@ export class ChatWindow implements OnInit {
     this.channelId =
       this.route.snapshot.paramMap.get('channelId') || '';
 
-    this.setNames();
+    this.loadNames();
+    this.loadMessages();
   }
 
-  setNames() {
+  loadNames() {
 
-    if (this.groupId === 'gaming') {
-      this.groupName = 'Gaming Group';
-    } else if (this.groupId === 'study') {
-      this.groupName = 'Study Group';
-    } else {
-      this.groupName = 'General Community';
-    }
+    this.http.get<any>(
+      `${API}/groups/${this.groupId}`
+    ).subscribe({
+      next: group => {
+        this.groupName = group.name;
+        this.groupAdminIds = group.adminIds || [];
+      }
+    });
 
-    if (this.channelId === 'general') {
-      this.channelName = 'General';
-    } else if (this.channelId === 'announcements') {
-      this.channelName = 'Announcements';
-    } else {
-      this.channelName = 'Games';
-    }
+    this.http.get<any[]>(
+      `${API}/groups/${this.groupId}/channels`
+    ).subscribe({
+      next: channels => {
+        const channel = channels.find(
+          c => c.id === Number(this.channelId)
+        );
+        this.channelName = channel ? channel.name : '';
+      }
+    });
+  }
+
+  loadMessages() {
+
+    this.http.get<ChatMessage[]>(
+      `${API}/channels/${this.channelId}/messages`,
+      { params: { userId: this.currentUser.id } }
+    ).subscribe({
+
+      next: messages => {
+        this.messages = messages;
+        this.errorMessage = '';
+      },
+
+      error: error => {
+        this.errorMessage =
+          error.error?.message || 'Could not load messages';
+      }
+
+    });
   }
 
   sendMessage() {
 
     const text = this.messageText.trim();
 
-    if (!text) {
+    if (!text || this.sending) {
       return;
     }
 
-    const newMessage = {
-      id: Date.now(),
-      username: this.currentUser.username,
-      text: text,
-      time: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    };
+    this.sending = true;
 
-    this.messages.push(newMessage);
+    this.http.post<ChatMessage>(
+      `${API}/channels/${this.channelId}/messages`,
+      {
+        userId: this.currentUser.id,
+        text
+      }
+    ).subscribe({
 
-    this.messageText = '';
+      next: message => {
+        this.messages.push(message);
+        this.messageText = '';
+        this.errorMessage = '';
+        this.sending = false;
+      },
+
+      error: error => {
+        this.errorMessage =
+          error.error?.message || 'Could not send message';
+        this.sending = false;
+      }
+
+    });
+  }
+
+  // Mirrors the server's rule: the sender, an admin
+  // of this group, or the Super Admin.
+  canDelete(message: ChatMessage): boolean {
+    return message.userId === this.currentUser.id ||
+      this.currentUser.role === 'superAdmin' ||
+      this.groupAdminIds.includes(this.currentUser.id);
   }
 
   deleteMessage(messageId: number) {
 
-    const message = this.messages.find(
-      m => m.id === messageId
-    );
+    this.http.delete(
+      `${API}/messages/${messageId}`,
+      { params: { userId: this.currentUser.id } }
+    ).subscribe({
 
-    if (!message) {
-      return;
-    }
+      next: () => {
+        this.messages = this.messages.filter(
+          m => m.id !== messageId
+        );
+      },
 
-    if (message.username !== this.currentUser.username) {
-      return;
-    }
+      error: error => {
+        this.errorMessage =
+          error.error?.message || 'Could not delete message';
+      }
 
-    this.messages = this.messages.filter(
-      m => m.id !== messageId
-    );
+    });
+  }
+
+  formatTime(timestamp: string): string {
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 }
