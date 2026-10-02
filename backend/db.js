@@ -72,9 +72,55 @@ async function getNextId(collectionName) {
   return counter.seq;
 }
 
+// ====================================================
+// INDEXES
+// ====================================================
+
+// Used by seed.js and by the test suite, so both get the
+// same uniqueness rules and fast lookups.
+async function createIndexes(db) {
+
+  // Fast lookups by numeric id, and no duplicate ids.
+  for (const name of ['users', 'groups', 'channels', 'requests', 'audit', 'messages']) {
+    await db.collection(name).createIndex(
+      { id: 1 },
+      { unique: true }
+    );
+  }
+
+  // strength 2 = case-insensitive, so "Bob" and "bob"
+  // count as the same username / group name.
+  const caseInsensitive = { locale: 'en', strength: 2 };
+
+  await db.collection('users').createIndex(
+    { username: 1 },
+    { unique: true, collation: caseInsensitive }
+  );
+
+  await db.collection('groups').createIndex(
+    { name: 1 },
+    { unique: true, collation: caseInsensitive }
+  );
+
+  // Channel names only need to be unique within a group.
+  // This index also serves "all channels in group X" queries.
+  await db.collection('channels').createIndex(
+    { groupId: 1, name: 1 },
+    { unique: true, collation: caseInsensitive }
+  );
+
+  await db.collection('requests').createIndex({ status: 1 });
+
+  // Serves "latest messages in channel X" queries.
+  await db.collection('messages').createIndex(
+    { channelId: 1, timestamp: 1 }
+  );
+}
+
 module.exports = {
   connectDb,
   getDb,
   closeDb,
-  getNextId
+  getNextId,
+  createIndexes
 };

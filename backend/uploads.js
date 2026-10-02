@@ -10,7 +10,10 @@ const multer = require('multer');
 // served at /uploads/... MongoDB only stores the URL,
 // which keeps documents small and queries fast.
 
-const UPLOAD_DIR = path.join(__dirname, 'uploads');
+// Can be overridden with an environment variable
+// (the test suite uses a temporary folder).
+const UPLOAD_DIR =
+  process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2MB
 

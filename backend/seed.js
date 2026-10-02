@@ -2,7 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const {
   connectDb,
-  closeDb
+  closeDb,
+  createIndexes
 } = require('./db');
 const {
   hashPassword,
@@ -127,50 +128,8 @@ async function seed() {
     { upsert: true }
   );
 
-  // Indexes: fast lookups by id, and no duplicate usernames.
-  for (const name of Object.keys(SOURCES)) {
-    await db.collection(name).createIndex(
-      { id: 1 },
-      { unique: true }
-    );
-  }
-
-  await db.collection('users').createIndex(
-    { username: 1 },
-    {
-      unique: true,
-      // strength 2 = case-insensitive
-      collation: { locale: 'en', strength: 2 }
-    }
-  );
-
-  await db.collection('groups').createIndex(
-    { name: 1 },
-    {
-      unique: true,
-      collation: { locale: 'en', strength: 2 }
-    }
-  );
-
-  // Channel names only need to be unique within a group.
-  // This index also serves "all channels in group X" queries.
-  await db.collection('channels').createIndex(
-    { groupId: 1, name: 1 },
-    {
-      unique: true,
-      collation: { locale: 'en', strength: 2 }
-    }
-  );
-  await db.collection('requests').createIndex({ status: 1 });
-  await db.collection('messages').createIndex(
-    { id: 1 },
-    { unique: true }
-  );
-
-  // Serves "latest messages in channel X" queries.
-  await db.collection('messages').createIndex(
-    { channelId: 1, timestamp: 1 }
-  );
+  // Same indexes the server relies on (see db.js).
+  await createIndexes(db);
 
   console.log('Seeding complete.');
 }

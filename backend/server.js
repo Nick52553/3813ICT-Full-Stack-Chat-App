@@ -1767,26 +1767,32 @@ setupSockets(io, {
   saveMessage
 });
 
-connectDb()
-  .then(async () => {
+async function start() {
 
-    // Upgrade any accounts created before passwords
-    // were hashed (does nothing once they all are).
-    const upgraded = await hashPlaintextPasswords(usersCollection());
+  await connectDb();
 
-    if (upgraded) {
-      console.log(`Hashed ${upgraded} plain-text password(s)`);
-    }
+  // Upgrade any accounts created before passwords
+  // were hashed (does nothing once they all are).
+  const upgraded = await hashPlaintextPasswords(usersCollection());
 
-    server.listen(PORT, () => {
+  if (upgraded) {
+    console.log(`Hashed ${upgraded} plain-text password(s)`);
+  }
 
-      console.log(
-        `Server running on http://localhost:${PORT} (REST + Socket.io)`
-      );
+  server.listen(PORT, () => {
 
-    });
-  })
-  .catch(error => {
+    console.log(
+      `Server running on http://localhost:${PORT} (REST + Socket.io)`
+    );
+
+  });
+}
+
+// Start only when run directly (`node server.js`). The test
+// suite imports this file and controls the server itself.
+if (require.main === module) {
+
+  start().catch(error => {
 
     console.error(
       'Could not connect to MongoDB:',
@@ -1795,3 +1801,10 @@ connectDb()
 
     process.exit(1);
   });
+}
+
+module.exports = {
+  app,
+  server,
+  io
+};
