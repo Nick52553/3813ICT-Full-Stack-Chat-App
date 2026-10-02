@@ -3,6 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Navbar } from '../navbar/navbar';
+import {
+  LIMITS,
+  hasErrors,
+  httpErrorMessage,
+  validateDescription,
+  validateName,
+  validateRequired
+} from '../../utils/validation';
 
 @Component({
   selector: 'app-channel-management',
@@ -30,6 +38,12 @@ export class ChannelManagement implements OnInit {
 
   message = '';
   error = '';
+
+  readonly limits = LIMITS;
+
+  // Set once Create Channel is pressed, so field errors
+  // don't show before anything has been typed.
+  submitted = false;
 
   constructor(private http: HttpClient) {}
 
@@ -63,17 +77,31 @@ export class ChannelManagement implements OnInit {
     });
   }
 
+  // One entry per field: an error message, or null.
+  get errors() {
+    return {
+      groupId: validateRequired(this.groupId, 'Please choose a group'),
+      channelName: validateName(this.channelName, 'Channel name'),
+      description: validateDescription(this.description)
+    };
+  }
+
   createChannel() {
 
     this.message = '';
     this.error = '';
+    this.submitted = true;
+
+    if (hasErrors(this.errors)) {
+      return;
+    }
 
     this.http.post<any>(
       'http://localhost:3000/api/channels',
       {
         groupId: this.groupId,
-        name: this.channelName,
-        description: this.description,
+        name: this.channelName.trim(),
+        description: this.description.trim(),
         memberIds: []
       }
     ).subscribe({
@@ -85,6 +113,7 @@ export class ChannelManagement implements OnInit {
 
         this.channelName = '';
         this.description = '';
+        this.submitted = false;
 
         this.loadChannels();
       },
@@ -92,8 +121,7 @@ export class ChannelManagement implements OnInit {
       error: error => {
 
         this.error =
-          error.error?.message ||
-          'Could not create channel.';
+          httpErrorMessage(error, 'Could not create channel.');
       }
 
     });
@@ -101,7 +129,11 @@ export class ChannelManagement implements OnInit {
 
   assignUser() {
 
+    this.message = '';
+    this.error = '';
+
     if (!this.channelId || !this.userId) {
+      this.error = 'Please select both a channel and a user.';
       return;
     }
 
@@ -119,8 +151,7 @@ export class ChannelManagement implements OnInit {
 
       error: error => {
         this.error =
-          error.error?.message ||
-          'Could not assign user.';
+          httpErrorMessage(error, 'Could not assign user.');
       }
 
     });

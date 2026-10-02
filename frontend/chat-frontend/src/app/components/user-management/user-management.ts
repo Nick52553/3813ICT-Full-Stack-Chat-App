@@ -3,6 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Navbar } from '../navbar/navbar';
+import {
+  LIMITS,
+  hasErrors,
+  httpErrorMessage,
+  validateAge,
+  validatePassword,
+  validateUsername
+} from '../../utils/validation';
 
 @Component({
   selector: 'app-user-management',
@@ -28,6 +36,13 @@ export class UserManagement implements OnInit {
 
   message = '';
   error = '';
+
+  readonly limits = LIMITS;
+
+  // Set once Create User is pressed, so field errors
+  // don't show before the admin has typed anything.
+  submitted = false;
+  creating = false;
 
   currentUser: any = JSON.parse(
     localStorage.getItem('currentUser') ||
@@ -68,42 +83,26 @@ export class UserManagement implements OnInit {
 
   }
 
+  // One entry per field: an error message, or null.
+  get errors() {
+    return {
+      username: validateUsername(this.username),
+      password: validatePassword(this.password),
+      age: validateAge(this.age)
+    };
+  }
+
   createUser() {
 
     this.message = '';
     this.error = '';
+    this.submitted = true;
 
-    if (!this.username.trim()) {
-
-      this.error =
-        'Please enter a username.';
-
+    if (hasErrors(this.errors) || this.creating) {
       return;
     }
 
-    if (!this.password) {
-
-      this.error =
-        'Please enter a password.';
-
-      return;
-    }
-
-    if (this.password.length < 8) {
-
-      this.error =
-        'Password must be at least 8 characters.';
-
-      return;
-    }
-
-    if (!/[A-Z]/.test(this.password)) {
-
-      this.error =
-        'Password must contain at least one uppercase letter.';
-
-      return;
-    }
+    this.creating = true;
 
     this.http.post<any>(
       'http://localhost:3000/api/users',
@@ -111,7 +110,9 @@ export class UserManagement implements OnInit {
         username: this.username.trim(),
         password: this.password,
         age: this.age,
-        role: this.role
+        role: this.role,
+        // The server only lets a Super Admin pick a role.
+        requesterId: this.currentUser.id
       }
     ).subscribe({
 
@@ -124,6 +125,8 @@ export class UserManagement implements OnInit {
         this.password = '';
         this.age = 18;
         this.role = 'user';
+        this.submitted = false;
+        this.creating = false;
 
         this.loadUsers();
 
@@ -131,9 +134,10 @@ export class UserManagement implements OnInit {
 
       error: error => {
 
+        this.creating = false;
+
         this.error =
-          error.error?.message ||
-          'Could not create user.';
+          httpErrorMessage(error, 'Could not create user.');
 
       }
 

@@ -45,7 +45,8 @@
 
       <form
         (ngSubmit)="createUser()"
-        class="management-form">
+        class="management-form"
+        novalidate>
 
         <div class="form-group">
 
@@ -59,7 +60,14 @@
             name="username"
             [(ngModel)]="username"
             placeholder="Enter username"
+            [attr.maxlength]="limits.USERNAME_MAX"
+            aria-describedby="username-error"
+            [attr.aria-invalid]="submitted && !!errors.username"
             required>
+
+          <small id="username-error" class="field-error" *ngIf="submitted && errors.username">
+            {{ errors.username }}
+          </small>
 
         </div>
 
@@ -76,10 +84,17 @@
             name="password"
             [(ngModel)]="password"
             placeholder="Enter password"
+            autocomplete="new-password"
+            aria-describedby="password-hint password-error"
+            [attr.aria-invalid]="submitted && !!errors.password"
             required>
 
-          <small>
-            Minimum 8 characters with at least 1 uppercase letter.
+          <small id="password-hint">
+            Minimum {{ limits.PASSWORD_MIN }} characters with at least 1 uppercase letter.
+          </small>
+
+          <small id="password-error" class="field-error" *ngIf="submitted && errors.password">
+            {{ errors.password }}
           </small>
 
         </div>
@@ -98,9 +113,16 @@
               type="number"
               name="age"
               [(ngModel)]="age"
-              min="1"
+              [min]="limits.AGE_MIN"
+              [max]="limits.AGE_MAX"
               placeholder="Age"
+              aria-describedby="age-error"
+              [attr.aria-invalid]="submitted && !!errors.age"
               required>
+
+            <small id="age-error" class="field-error" *ngIf="submitted && errors.age">
+              {{ errors.age }}
+            </small>
 
           </div>
 
@@ -137,9 +159,10 @@
 
         <button
           type="submit"
-          class="primary-button">
+          class="primary-button"
+          [disabled]="creating">
 
-          Create User
+          {{ creating ? 'Creating…' : 'Create User' }}
 
         </button>
 

@@ -28,27 +28,52 @@
     <h2>Create Group</h2>
 
     <form
-      (ngSubmit)="createGroup()">
+      (ngSubmit)="createGroup()"
+      novalidate>
 
       <input
         type="text"
         name="groupName"
         [(ngModel)]="groupName"
         placeholder="Group name"
+        aria-label="Group name"
+        [attr.maxlength]="limits.NAME_MAX"
+        aria-describedby="group-name-error"
+        [attr.aria-invalid]="submitted && !!errors.groupName"
         required>
+
+      <small id="group-name-error" class="field-error" *ngIf="submitted && errors.groupName">
+        {{ errors.groupName }}
+      </small>
 
       <textarea
         name="description"
         [(ngModel)]="description"
-        placeholder="Group description">
+        placeholder="Group description"
+        aria-label="Group description"
+        [attr.maxlength]="limits.DESCRIPTION_MAX"
+        aria-describedby="group-description-error"
+        [attr.aria-invalid]="submitted && !!errors.description">
       </textarea>
+
+      <small id="group-description-error" class="field-error" *ngIf="submitted && errors.description">
+        {{ errors.description }}
+      </small>
 
       <input
         type="number"
         name="ageLimit"
         [(ngModel)]="ageLimit"
-        min="0"
-        placeholder="Minimum age">
+        [min]="limits.AGE_LIMIT_MIN"
+        [max]="limits.AGE_LIMIT_MAX"
+        placeholder="Minimum age"
+        aria-label="Minimum age (0 for no limit)"
+        aria-describedby="age-limit-error"
+        [attr.aria-invalid]="submitted && !!errors.ageLimit">
+
+      <small id="age-limit-error" class="field-error" *ngIf="submitted && errors.ageLimit">
+        {{ errors.ageLimit }}
+      </small>
 
       <button
         type="submit">

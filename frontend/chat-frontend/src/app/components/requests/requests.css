@@ -25,3 +25,4 @@
 .request-card form button:hover { background: var(--accent-dim); }
 
 .success-message { padding: 0.85rem 1rem; border: 1px solid var(--signal); border-radius: var(--radius); color: var(--signal); background: var(--panel); font-family: var(--font-display); font-size: 0.68rem; }
+.error-message { padding: 0.85rem 1rem; border: 1px solid var(--danger); border-radius: var(--radius); color: var(--danger); background: var(--panel); font-family: var(--font-display); font-size: 0.68rem; }

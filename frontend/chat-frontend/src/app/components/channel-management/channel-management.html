@@ -8,11 +8,14 @@
 
     <h2>Create Channel</h2>
 
-    <form (ngSubmit)="createChannel()">
+    <form (ngSubmit)="createChannel()" novalidate>
 
       <select
         name="groupId"
         [(ngModel)]="groupId"
+        aria-label="Group"
+        aria-describedby="channel-group-error"
+        [attr.aria-invalid]="submitted && !!errors.groupId"
         required>
 
         <option [ngValue]="null">
@@ -29,18 +32,38 @@
 
       </select>
 
+      <small id="channel-group-error" class="field-error" *ngIf="submitted && errors.groupId">
+        {{ errors.groupId }}
+      </small>
+
       <input
         type="text"
         name="channelName"
         [(ngModel)]="channelName"
         placeholder="Channel name"
+        aria-label="Channel name"
+        [attr.maxlength]="limits.NAME_MAX"
+        aria-describedby="channel-name-error"
+        [attr.aria-invalid]="submitted && !!errors.channelName"
         required>
+
+      <small id="channel-name-error" class="field-error" *ngIf="submitted && errors.channelName">
+        {{ errors.channelName }}
+      </small>
 
       <textarea
         name="description"
         [(ngModel)]="description"
-        placeholder="Channel description">
+        placeholder="Channel description"
+        aria-label="Channel description"
+        [attr.maxlength]="limits.DESCRIPTION_MAX"
+        aria-describedby="channel-description-error"
+        [attr.aria-invalid]="submitted && !!errors.description">
       </textarea>
+
+      <small id="channel-description-error" class="field-error" *ngIf="submitted && errors.description">
+        {{ errors.description }}
+      </small>
 
       <button type="submit">
         Create Channel
@@ -56,6 +79,7 @@
 
     <select
       name="channelId"
+      aria-label="Channel"
       [(ngModel)]="channelId">
 
       <option [ngValue]="null">
@@ -74,6 +98,7 @@
 
     <select
       name="userId"
+      aria-label="User"
       [(ngModel)]="userId">
 
       <option [ngValue]="null">
@@ -100,11 +125,11 @@
 
   </section>
 
-  <p *ngIf="message">
+  <p *ngIf="message" class="success-message" role="status">
     {{ message }}
   </p>
 
-  <p *ngIf="error">
+  <p *ngIf="error" class="error-message" role="alert">
     {{ error }}
   </p>
 

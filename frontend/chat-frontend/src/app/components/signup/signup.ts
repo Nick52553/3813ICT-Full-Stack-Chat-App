@@ -3,6 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import {
+  LIMITS,
+  hasErrors,
+  httpErrorMessage,
+  validateAge,
+  validatePassword,
+  validatePasswordMatch,
+  validateUsername
+} from '../../utils/validation';
 
 @Component({
   selector: 'app-signup',
@@ -16,11 +25,21 @@ import { HttpClient } from '@angular/common/http';
 })
 export class Signup {
 
+  readonly limits = LIMITS;
+
   username = '';
   password = '';
+  confirmPassword = '';
   dob = '';
 
-  signupFailed = false;
+  // Latest date the date picker allows (today).
+  readonly today = new Date().toISOString().slice(0, 10);
+
+  // Set once Create Account is pressed, so errors don't
+  // show before the user has had a chance to type.
+  submitted = false;
+  submitting = false;
+
   signupMessage = '';
 
   constructor(
@@ -49,27 +68,46 @@ export class Signup {
     return age;
   }
 
+  validateDob(): string | null {
+
+    if (!this.dob) {
+      return 'Date of birth is required';
+    }
+
+    if (this.dob > this.today) {
+      return 'Date of birth cannot be in the future';
+    }
+
+    return validateAge(this.calculateAge(this.dob));
+  }
+
+  // One entry per field: an error message, or null.
+  get errors() {
+    return {
+      username: validateUsername(this.username),
+      password: validatePassword(this.password),
+      confirmPassword: validatePasswordMatch(this.password, this.confirmPassword),
+      dob: this.validateDob()
+    };
+  }
+
   signup() {
 
-    this.signupFailed = false;
+    this.submitted = true;
     this.signupMessage = '';
 
-    if (!this.username.trim() || !this.password || !this.dob) {
-
-      this.signupFailed = true;
-      this.signupMessage = 'Username, password and date of birth are required.';
-
+    if (hasErrors(this.errors) || this.submitting) {
       return;
     }
 
-    const age = this.calculateAge(this.dob);
+    this.submitting = true;
 
     this.http.post<any>(
       'http://localhost:3000/api/users',
       {
         username: this.username.trim(),
         password: this.password,
-        age
+        age: this.calculateAge(this.dob)
       }
     ).subscribe({
 
@@ -85,13 +123,10 @@ export class Signup {
 
       error: (error) => {
 
-        console.error('Signup failed:', error);
-
-        this.signupFailed = true;
+        this.submitting = false;
 
         this.signupMessage =
-          error?.error?.message ||
-          'Could not create your account.';
+          httpErrorMessage(error, 'Could not create your account.');
       }
 
     });

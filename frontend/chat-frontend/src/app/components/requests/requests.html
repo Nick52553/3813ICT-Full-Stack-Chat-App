@@ -25,7 +25,7 @@
         <button
           type="button"
           [class.active]="requestType === 'group'"
-          (click)="requestType = 'group'">
+          (click)="selectType('group')">
 
           New Group
 
@@ -34,7 +34,7 @@
         <button
           type="button"
           [class.active]="requestType === 'join'"
-          (click)="requestType = 'join'">
+          (click)="selectType('join')">
 
           Join Group
 
@@ -43,7 +43,7 @@
         <button
           type="button"
           [class.active]="requestType === 'channel'"
-          (click)="requestType = 'channel'">
+          (click)="selectType('channel')">
 
           New Channel
 
@@ -52,7 +52,7 @@
         <button
           type="button"
           [class.active]="requestType === 'ban'"
-          (click)="requestType = 'ban'">
+          (click)="selectType('ban')">
 
           Request Removal
 
@@ -74,34 +74,58 @@
         Your request will be reviewed by the Super Admin.
       </p>
 
-      <form (ngSubmit)="submitRequest()">
+      <form (ngSubmit)="submitRequest()" novalidate>
 
-        <label>Group Name</label>
+        <label for="groupName">Group Name</label>
 
         <input
+          id="groupName"
           type="text"
           name="groupName"
           [(ngModel)]="groupName"
           placeholder="Enter group name"
+          [attr.maxlength]="limits.NAME_MAX"
+          aria-describedby="group-name-error"
+          [attr.aria-invalid]="submitted && !!errors.groupName"
           required>
 
-        <label>Description</label>
+        <small id="group-name-error" class="field-error" *ngIf="submitted && errors.groupName">
+          {{ errors.groupName }}
+        </small>
+
+        <label for="groupDescription">Description</label>
 
         <textarea
+          id="groupDescription"
           name="groupDescription"
           [(ngModel)]="groupDescription"
+          [attr.maxlength]="limits.DESCRIPTION_MAX"
+          aria-describedby="group-description-error"
+          [attr.aria-invalid]="submitted && !!errors.groupDescription"
           placeholder="Describe the group">
         </textarea>
 
-        <label>Minimum Age</label>
+        <small id="group-description-error" class="field-error" *ngIf="submitted && errors.groupDescription">
+          {{ errors.groupDescription }}
+        </small>
+
+        <label for="groupAgeLimit">Minimum Age</label>
 
         <input
+          id="groupAgeLimit"
           type="number"
           name="groupAgeLimit"
           [(ngModel)]="groupAgeLimit"
-          min="0">
+          [min]="limits.AGE_LIMIT_MIN"
+          [max]="limits.AGE_LIMIT_MAX"
+          aria-describedby="group-age-limit-error"
+          [attr.aria-invalid]="submitted && !!errors.groupAgeLimit">
 
-        <button type="submit">
+        <small id="group-age-limit-error" class="field-error" *ngIf="submitted && errors.groupAgeLimit">
+          {{ errors.groupAgeLimit }}
+        </small>
+
+        <button type="submit" [disabled]="submitting">
           Submit Group Request
         </button>
 
@@ -122,13 +146,16 @@
         minimum age requirement will reject underage requests.
       </p>
 
-      <form (ngSubmit)="submitRequest()">
+      <form (ngSubmit)="submitRequest()" novalidate>
 
-        <label>Group</label>
+        <label for="joinGroup">Group</label>
 
         <select
+          id="joinGroup"
           name="joinGroup"
           [(ngModel)]="selectedGroup"
+          aria-describedby="join-group-error"
+          [attr.aria-invalid]="submitted && !!errors.selectedGroup"
           required>
 
           <option value="">
@@ -148,7 +175,11 @@
 
         </select>
 
-        <button type="submit">
+        <small id="join-group-error" class="field-error" *ngIf="submitted && errors.selectedGroup">
+          {{ errors.selectedGroup }}
+        </small>
+
+        <button type="submit" [disabled]="submitting">
           Submit Join Request
         </button>
 
@@ -168,13 +199,16 @@
         Your request will be reviewed by a Group Admin.
       </p>
 
-      <form (ngSubmit)="submitRequest()">
+      <form (ngSubmit)="submitRequest()" novalidate>
 
-        <label>Group</label>
+        <label for="channelGroup">Group</label>
 
         <select
+          id="channelGroup"
           name="selectedGroup"
           [(ngModel)]="selectedGroup"
+          aria-describedby="channel-group-error"
+          [attr.aria-invalid]="submitted && !!errors.selectedGroup"
           required>
 
           <option value="">
@@ -191,24 +225,44 @@
 
         </select>
 
-        <label>Channel Name</label>
+        <small id="channel-group-error" class="field-error" *ngIf="submitted && errors.selectedGroup">
+          {{ errors.selectedGroup }}
+        </small>
+
+        <label for="channelName">Channel Name</label>
 
         <input
+          id="channelName"
           type="text"
           name="channelName"
           [(ngModel)]="channelName"
           placeholder="Enter channel name"
+          [attr.maxlength]="limits.NAME_MAX"
+          aria-describedby="channel-name-error"
+          [attr.aria-invalid]="submitted && !!errors.channelName"
           required>
 
-        <label>Description</label>
+        <small id="channel-name-error" class="field-error" *ngIf="submitted && errors.channelName">
+          {{ errors.channelName }}
+        </small>
+
+        <label for="channelDescription">Description</label>
 
         <textarea
+          id="channelDescription"
           name="channelDescription"
           [(ngModel)]="channelDescription"
+          [attr.maxlength]="limits.DESCRIPTION_MAX"
+          aria-describedby="channel-description-error"
+          [attr.aria-invalid]="submitted && !!errors.channelDescription"
           placeholder="Describe the channel">
         </textarea>
 
-        <button type="submit">
+        <small id="channel-description-error" class="field-error" *ngIf="submitted && errors.channelDescription">
+          {{ errors.channelDescription }}
+        </small>
+
+        <button type="submit" [disabled]="submitting">
           Submit Channel Request
         </button>
 
@@ -228,13 +282,16 @@
         A Group Admin will review this request.
       </p>
 
-      <form (ngSubmit)="submitRequest()">
+      <form (ngSubmit)="submitRequest()" novalidate>
 
-        <label>Group</label>
+        <label for="banGroup">Group</label>
 
         <select
+          id="banGroup"
           name="selectedGroup"
           [(ngModel)]="selectedGroup"
+          aria-describedby="ban-group-error"
+          [attr.aria-invalid]="submitted && !!errors.selectedGroup"
           required>
 
           <option value="">
@@ -251,11 +308,18 @@
 
         </select>
 
-        <label>User</label>
+        <small id="ban-group-error" class="field-error" *ngIf="submitted && errors.selectedGroup">
+          {{ errors.selectedGroup }}
+        </small>
+
+        <label for="banUser">User</label>
 
         <select
+          id="banUser"
           name="selectedUser"
           [(ngModel)]="selectedUser"
+          aria-describedby="ban-user-error"
+          [attr.aria-invalid]="submitted && !!errors.selectedUser"
           required>
 
           <option value="">
@@ -272,16 +336,27 @@
 
         </select>
 
-        <label>Reason</label>
+        <small id="ban-user-error" class="field-error" *ngIf="submitted && errors.selectedUser">
+          {{ errors.selectedUser }}
+        </small>
+
+        <label for="banReason">Reason (optional)</label>
 
         <textarea
+          id="banReason"
           name="banReason"
           [(ngModel)]="banReason"
-          placeholder="Explain the reason for the request"
-          required>
+          [attr.maxlength]="limits.REASON_MAX"
+          aria-describedby="ban-reason-error"
+          [attr.aria-invalid]="submitted && !!errors.banReason"
+          placeholder="Explain the reason for the request">
         </textarea>
 
-        <button type="submit">
+        <small id="ban-reason-error" class="field-error" *ngIf="submitted && errors.banReason">
+          {{ errors.banReason }}
+        </small>
+
+        <button type="submit" [disabled]="submitting">
           Submit Removal Request
         </button>
 
@@ -291,7 +366,8 @@
 
     <div
       *ngIf="message"
-      class="success-message">
+      class="success-message"
+      role="status">
 
       {{ message }}
 
@@ -299,7 +375,8 @@
 
     <div
       *ngIf="error"
-      class="error-message">
+      class="error-message"
+      role="alert">
 
       {{ error }}
 

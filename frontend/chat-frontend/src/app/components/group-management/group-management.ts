@@ -3,6 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Navbar } from '../navbar/navbar';
+import {
+  LIMITS,
+  hasErrors,
+  httpErrorMessage,
+  validateAgeLimit,
+  validateDescription,
+  validateName
+} from '../../utils/validation';
 
 @Component({
   selector: 'app-group-management',
@@ -39,7 +47,13 @@ export class GroupManagement implements OnInit {
 
   groupName = '';
   description = '';
-  ageLimit = 0;
+  ageLimit: number | null = 0;
+
+  readonly limits = LIMITS;
+
+  // Set once Create Group is pressed, so field errors
+  // don't show before anything has been typed.
+  submitted = false;
 
   // --------------------------------------------------
   // MESSAGES
@@ -176,16 +190,22 @@ export class GroupManagement implements OnInit {
   // CREATE GROUP
   // --------------------------------------------------
 
+  // One entry per field: an error message, or null.
+  get errors() {
+    return {
+      groupName: validateName(this.groupName, 'Group name'),
+      description: validateDescription(this.description),
+      ageLimit: validateAgeLimit(this.ageLimit)
+    };
+  }
+
   createGroup() {
 
     this.message = '';
     this.error = '';
+    this.submitted = true;
 
-    if (!this.groupName.trim()) {
-
-      this.error =
-        'Please enter a group name.';
-
+    if (hasErrors(this.errors)) {
       return;
     }
 
@@ -194,7 +214,7 @@ export class GroupManagement implements OnInit {
       {
         name: this.groupName.trim(),
         description: this.description.trim(),
-        ageLimit: this.ageLimit,
+        ageLimit: this.ageLimit ?? 0,
         adminIds: [],
         memberIds: []
       }
@@ -208,6 +228,7 @@ export class GroupManagement implements OnInit {
         this.groupName = '';
         this.description = '';
         this.ageLimit = 0;
+        this.submitted = false;
 
         this.loadGroups();
 
@@ -221,8 +242,7 @@ export class GroupManagement implements OnInit {
         );
 
         this.error =
-          error.error?.message ||
-          'Could not create group.';
+          httpErrorMessage(error, 'Could not create group.');
 
       }
 

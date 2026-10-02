@@ -51,3 +51,7 @@ input, select, textarea { font-family: var(--font-body); }
 .error { color: var(--danger); font-family: var(--font-display); font-size: 0.85rem; }
 /* Hidden but still reachable by assistive technology (e.g. file inputs opened by a button) */
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Form validation: message under the field it belongs to */
+.field-error { display: block; margin-top: 0.3rem; color: var(--danger); font-size: 0.75rem; }
+input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--danger) !important; }

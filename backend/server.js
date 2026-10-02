@@ -12,6 +12,17 @@ const {
   channelRoom
 } = require('./sockets');
 const {
+  validateUsername,
+  validatePassword,
+  validateAge,
+  validateRole,
+  validateName,
+  validateDescription,
+  validateReason,
+  validateAgeLimit,
+  firstError
+} = require('./validation');
+const {
   UPLOAD_DIR,
   singleImage,
   saveImage,
@@ -299,9 +310,15 @@ app.post('/api/bootstrap', async (req, res) => {
     age
   } = req.body;
 
-  if (!username || !password) {
+  const invalid = firstError(
+    validateUsername(username),
+    validatePassword(password),
+    validateAge(age)
+  );
+
+  if (invalid) {
     return res.status(400).json({
-      message: 'Username and password are required'
+      message: invalid
     });
   }
 
@@ -346,7 +363,15 @@ app.post('/api/login', async (req, res) => {
     password
   } = req.body;
 
-  if (!username || !password) {
+  // Must be plain strings: an object such as
+  // { "$ne": "" } would otherwise act as a MongoDB
+  // operator and match any user (NoSQL injection).
+  if (
+    typeof username !== 'string' ||
+    typeof password !== 'string' ||
+    !username.trim() ||
+    !password
+  ) {
     return res.status(400).json({
       message: 'Username and password are required'
     });
@@ -381,27 +406,51 @@ app.get('/api/users', async (req, res) => {
   res.json(users.map(toSafeUser));
 });
 
-// Create user
+// Create user. Used by public sign-up (always a regular
+// user) and by the Super Admin's User Management page,
+// which may pick a role and must send its requesterId.
 app.post('/api/users', async (req, res) => {
 
   const {
     username,
     password,
     age,
-    role
+    requesterId
   } = req.body;
 
-  if (!username || !password) {
+  const role = req.body.role || 'user';
+
+  const invalid = firstError(
+    validateUsername(username),
+    validatePassword(password),
+    validateAge(age),
+    validateRole(role)
+  );
+
+  if (invalid) {
     return res.status(400).json({
-      message: 'Username and password are required'
+      message: invalid
     });
+  }
+
+  // Without this, anyone could sign themselves up
+  // as a Super Admin.
+  if (role !== 'user') {
+
+    const requester = await getUserById(requesterId);
+
+    if (!requester || requester.role !== 'superAdmin') {
+      return res.status(403).json({
+        message: 'Only the Super Admin can create admin accounts'
+      });
+    }
   }
 
   const newUser = await insertUser({
     username,
     password,
     age,
-    role: role || 'user'
+    role
   });
 
   if (!newUser) {
@@ -538,9 +587,15 @@ app.post('/api/groups', async (req, res) => {
     memberIds
   } = req.body;
 
-  if (!name || !name.trim()) {
+  const invalid = firstError(
+    validateName(name, 'Group name'),
+    validateDescription(description),
+    validateAgeLimit(ageLimit)
+  );
+
+  if (invalid) {
     return res.status(400).json({
-      message: 'Group name is required'
+      message: invalid
     });
   }
 
@@ -731,14 +786,15 @@ app.post('/api/channels', async (req, res) => {
 
   const numericGroupId = Number(groupId);
 
-  if (
-    !numericGroupId ||
-    !name ||
-    !name.trim()
-  ) {
+  const invalid = firstError(
+    numericGroupId ? null : 'Please choose a group',
+    validateName(name, 'Channel name'),
+    validateDescription(description)
+  );
+
+  if (invalid) {
     return res.status(400).json({
-      message:
-        'Group ID and channel name are required'
+      message: invalid
     });
   }
 
@@ -898,6 +954,28 @@ app.post('/api/requests', async (req, res) => {
     });
   }
 
+  // Requests that will create something are checked now,
+  // so an admin never approves something invalid.
+  const invalid =
+    type === 'group'
+      ? firstError(
+        validateName(name, 'Group name'),
+        validateDescription(description),
+        validateAgeLimit(ageLimit)
+      )
+      : type === 'channel'
+        ? firstError(
+          validateName(name, 'Channel name'),
+          validateDescription(description)
+        )
+        : validateReason(reason);
+
+  if (invalid) {
+    return res.status(400).json({
+      message: invalid
+    });
+  }
+
   // Group-related request validation
   if (
     type === 'channel' ||
@@ -988,16 +1066,16 @@ app.post('/api/requests', async (req, res) => {
         : null,
 
     name:
-      name || '',
+      typeof name === 'string' ? name.trim() : '',
 
     description:
-      description || '',
+      typeof description === 'string' ? description.trim() : '',
 
     ageLimit:
       Number(ageLimit) || 0,
 
     reason:
-      reason || '',
+      typeof reason === 'string' ? reason.trim() : '',
 
     status:
       'pending',

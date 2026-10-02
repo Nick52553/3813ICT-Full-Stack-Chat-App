@@ -6,7 +6,7 @@
     <h2>Bootstrap Super Admin</h2>
     <p>No users exist yet. Register the first account to become the Super Admin.</p>
 
-    <form (ngSubmit)="register()">
+    <form (ngSubmit)="register()" novalidate>
 
       <div class="form-group">
         <label for="username">Username</label>
@@ -17,8 +17,16 @@
           name="username"
           [(ngModel)]="username"
           required
+          [attr.maxlength]="limits.USERNAME_MAX"
+          autocomplete="username"
+          aria-describedby="username-error"
+          [attr.aria-invalid]="submitted && !!errors.username"
           placeholder="Enter username"
         />
+
+        <small id="username-error" class="field-error" *ngIf="submitted && errors.username">
+          {{ errors.username }}
+        </small>
       </div>
 
       <div class="form-group">
@@ -30,8 +38,39 @@
           name="password"
           [(ngModel)]="password"
           required
+          autocomplete="new-password"
+          aria-describedby="password-hint password-error"
+          [attr.aria-invalid]="submitted && !!errors.password"
           placeholder="Enter password"
         />
+
+        <small id="password-hint">
+          At least {{ limits.PASSWORD_MIN }} characters, including an uppercase letter.
+        </small>
+
+        <small id="password-error" class="field-error" *ngIf="submitted && errors.password">
+          {{ errors.password }}
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+
+        <input
+          id="confirmPassword"
+          type="password"
+          name="confirmPassword"
+          [(ngModel)]="confirmPassword"
+          required
+          autocomplete="new-password"
+          aria-describedby="confirm-error"
+          [attr.aria-invalid]="submitted && !!errors.confirmPassword"
+          placeholder="Re-enter password"
+        />
+
+        <small id="confirm-error" class="field-error" *ngIf="submitted && errors.confirmPassword">
+          {{ errors.confirmPassword }}
+        </small>
       </div>
 
       <div class="form-group">
@@ -42,15 +81,24 @@
           type="number"
           name="age"
           [(ngModel)]="age"
+          required
+          [min]="limits.AGE_MIN"
+          [max]="limits.AGE_MAX"
+          aria-describedby="age-error"
+          [attr.aria-invalid]="submitted && !!errors.age"
           placeholder="Enter age"
         />
+
+        <small id="age-error" class="field-error" *ngIf="submitted && errors.age">
+          {{ errors.age }}
+        </small>
       </div>
 
-      <button type="submit">
-        Register Super Admin
+      <button type="submit" [disabled]="submitting">
+        {{ submitting ? 'Creating account…' : 'Register Super Admin' }}
       </button>
 
-      <p *ngIf="registerFailed" class="error">
+      <p *ngIf="registerMessage" class="error" role="alert">
         {{ registerMessage }}
       </p>
 
