@@ -8,7 +8,10 @@ export interface ChatMessage {
   groupId: number;
   userId: number;
   username: string;
+  // For picture messages text is an optional caption.
   text: string;
+  // e.g. /uploads/chat/<file>.png, or null for text messages
+  imageUrl: string | null;
   timestamp: string;
 }
 

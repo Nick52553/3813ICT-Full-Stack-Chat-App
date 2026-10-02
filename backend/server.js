@@ -11,12 +11,25 @@ const {
   setupSockets,
   channelRoom
 } = require('./sockets');
+const {
+  UPLOAD_DIR,
+  singleImage,
+  saveImage,
+  deleteImage
+} = require('./uploads');
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Uploaded avatars and chat images, e.g.
+// http://localhost:3000/uploads/avatars/<file>.png
+app.use('/uploads', express.static(UPLOAD_DIR, {
+  dotfiles: 'deny',
+  index: false
+}));
 
 // Express and Socket.io share one HTTP server (port 3000).
 const server = http.createServer(app);
@@ -77,7 +90,8 @@ function toSafeUser(user) {
     id: user.id,
     username: user.username,
     age: user.age,
-    role: user.role
+    role: user.role,
+    avatarUrl: user.avatarUrl || null
   };
 }
 
@@ -402,6 +416,86 @@ app.post('/api/users', async (req, res) => {
   });
 
   res.status(201).json(toSafeUser(newUser));
+});
+
+// Users may change their own avatar; the Super Admin
+// may change anyone's.
+async function canEditAvatar(requesterId, userId) {
+
+  if (Number(requesterId) === Number(userId)) {
+    return true;
+  }
+
+  const requester = await getUserById(requesterId);
+
+  return Boolean(requester) && requester.role === 'superAdmin';
+}
+
+// Upload / replace a profile picture.
+// multipart/form-data: avatar (file), requesterId
+app.post('/api/users/:userId/avatar', singleImage('avatar'), async (req, res) => {
+
+  const userId = Number(req.params.userId);
+
+  if (!(await canEditAvatar(req.body.requesterId, userId))) {
+    return res.status(403).json({
+      message: 'You can only change your own profile picture'
+    });
+  }
+
+  const user = await getUserById(userId);
+
+  if (!user) {
+    return res.status(404).json({
+      message: 'User not found'
+    });
+  }
+
+  const saved = await saveImage(req.file, 'avatars');
+
+  if (saved.error) {
+    return res.status(400).json({
+      message: saved.error
+    });
+  }
+
+  await usersCollection().updateOne(
+    { id: userId },
+    { $set: { avatarUrl: saved.url } }
+  );
+
+  // The old picture is no longer referenced anywhere.
+  await deleteImage(user.avatarUrl);
+
+  res.json(toSafeUser({ ...user, avatarUrl: saved.url }));
+});
+
+// Remove a profile picture.
+// ?requesterId= (required)
+app.delete('/api/users/:userId/avatar', async (req, res) => {
+
+  const userId = Number(req.params.userId);
+
+  if (!(await canEditAvatar(req.query.requesterId, userId))) {
+    return res.status(403).json({
+      message: 'You can only change your own profile picture'
+    });
+  }
+
+  const user = await usersCollection().findOneAndUpdate(
+    { id: userId },
+    { $unset: { avatarUrl: '' } }
+  );
+
+  if (!user) {
+    return res.status(404).json({
+      message: 'User not found'
+    });
+  }
+
+  await deleteImage(user.avatarUrl);
+
+  res.json(toSafeUser({ ...user, avatarUrl: null }));
 });
 
 // ====================================================
@@ -1261,6 +1355,8 @@ app.delete('/api/users/:userId', async (req, res) => {
     { $pull: { memberIds: userId } }
   );
 
+  await deleteImage(target.avatarUrl);
+
   await logAudit('user.deleted', requesterId, {
     deletedUserId: userId,
     deletedUsername: target.username
@@ -1365,16 +1461,18 @@ app.get('/api/channels/:channelId/messages', async (req, res) => {
 });
 
 // Validate and store a message. Shared by the REST
-// route below and the "sendMessage" socket event.
+// routes below and the "sendMessage" socket event.
+// imageUrl is set for picture messages, where the text
+// is an optional caption.
 // Returns { message } or { error: { status, message } }.
-async function saveMessage(user, channel, rawText) {
+async function saveMessage(user, channel, rawText, imageUrl = null) {
 
   const text =
     typeof rawText === 'string'
       ? rawText.trim()
       : '';
 
-  if (!text) {
+  if (!text && !imageUrl) {
     return { error: { status: 400, message: 'Message text is required' } };
   }
 
@@ -1396,6 +1494,7 @@ async function saveMessage(user, channel, rawText) {
     // if the user is later deleted.
     username: user.username,
     text,
+    imageUrl,
     timestamp: new Date().toISOString()
   };
 
@@ -1432,6 +1531,47 @@ app.post('/api/channels/:channelId/messages', async (req, res) => {
   }
 
   // Live update for anyone viewing the channel.
+  io.to(channelRoom(channel.id)).emit('newMessage', result.message);
+
+  res.status(201).json(result.message);
+});
+
+// Send an image to a channel. The file goes over HTTP
+// (sockets aren't suited to large uploads); the saved
+// message is then broadcast over the socket like any other.
+// multipart/form-data: image (file), userId, text (optional caption)
+app.post('/api/channels/:channelId/images', singleImage('image'), async (req, res) => {
+
+  const { user, channel, error } = await loadChannelAccess(
+    req.body.userId,
+    req.params.channelId
+  );
+
+  if (error) {
+    return res.status(error.status).json({
+      message: error.message
+    });
+  }
+
+  const saved = await saveImage(req.file, 'chat');
+
+  if (saved.error) {
+    return res.status(400).json({
+      message: saved.error
+    });
+  }
+
+  const result = await saveMessage(user, channel, req.body.text, saved.url);
+
+  if (result.error) {
+    // e.g. caption too long - don't keep an orphaned file.
+    await deleteImage(saved.url);
+
+    return res.status(result.error.status).json({
+      message: result.error.message
+    });
+  }
+
   io.to(channelRoom(channel.id)).emit('newMessage', result.message);
 
   res.status(201).json(result.message);
@@ -1477,6 +1617,8 @@ app.delete('/api/messages/:messageId', async (req, res) => {
   }
 
   await messagesCollection().deleteOne({ id: message.id });
+
+  await deleteImage(message.imageUrl);
 
   // Remove it from everyone's screen straight away.
   io.to(channelRoom(message.channelId)).emit('messageDeleted', {

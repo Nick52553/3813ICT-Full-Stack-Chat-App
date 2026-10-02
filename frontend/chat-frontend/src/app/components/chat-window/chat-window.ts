@@ -15,8 +15,14 @@ import {
   PresenceEvent,
   TypingEvent
 } from '../../models/chat.models';
+import {
+  IMAGE_ACCEPT,
+  SERVER_URL,
+  imageSrc,
+  validateImageFile
+} from '../../utils/images';
 
-const API = 'http://localhost:3000/api';
+const API = `${SERVER_URL}/api`;
 
 // Stop showing "X is typing" if we never hear that they
 // stopped (e.g. they closed the tab mid-sentence).
@@ -55,6 +61,15 @@ export class ChatWindow implements OnInit, OnDestroy {
 
   onlineUsers: OnlineUser[] = [];
 
+  // userId -> avatar path, for the pictures beside messages
+  private avatars = new Map<number, string>();
+
+  readonly imageAccept = IMAGE_ACCEPT;
+
+  // Image picked with the 📎 button, waiting to be sent
+  selectedImage: File | null = null;
+  selectedImagePreview: string | null = null;
+
   // username -> timer that hides their typing indicator
   private typingUsers = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -87,6 +102,7 @@ export class ChatWindow implements OnInit, OnDestroy {
       this.route.snapshot.paramMap.get('channelId') || '';
 
     this.loadNames();
+    this.loadAvatars();
     this.listenForEvents();
 
     // Join first, then load history, so no message can
@@ -103,6 +119,8 @@ export class ChatWindow implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
 
     this.typingUsers.forEach(timer => clearTimeout(timer));
+
+    this.clearSelectedImage();
   }
 
   // ------------------------------------------------
@@ -130,6 +148,29 @@ export class ChatWindow implements OnInit, OnDestroy {
         this.channelName = channel ? channel.name : '';
       }
     });
+  }
+
+  loadAvatars() {
+
+    this.http.get<any[]>(`${API}/users`).subscribe({
+      next: users => {
+        for (const user of users) {
+          if (user.avatarUrl) {
+            this.avatars.set(user.id, user.avatarUrl);
+          }
+        }
+      }
+    });
+  }
+
+  // Full URL of a sender's profile picture, or null to
+  // fall back to their initial.
+  avatarFor(userId: number): string | null {
+    return imageSrc(this.avatars.get(userId));
+  }
+
+  imageSrc(url: string | null): string | null {
+    return imageSrc(url);
   }
 
   async joinChannel() {
@@ -344,7 +385,16 @@ export class ChatWindow implements OnInit, OnDestroy {
 
     const text = this.messageText.trim();
 
-    if (!text || this.sending) {
+    if (this.sending) {
+      return;
+    }
+
+    if (this.selectedImage) {
+      this.sendImage(text);
+      return;
+    }
+
+    if (!text) {
       return;
     }
 
@@ -368,6 +418,81 @@ export class ChatWindow implements OnInit, OnDestroy {
     this.addMessage(ack.message);
     this.messageText = '';
     this.errorMessage = '';
+  }
+
+  // ------------------------------------------------
+  // IMAGES
+  // ------------------------------------------------
+
+  // Called when a file is picked with the 📎 button.
+  onImageSelected(event: Event) {
+
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    // Reset so picking the same file again still fires.
+    input.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    const problem = validateImageFile(file);
+
+    if (problem) {
+      this.errorMessage = problem;
+      return;
+    }
+
+    this.clearSelectedImage();
+    this.errorMessage = '';
+    this.selectedImage = file;
+    this.selectedImagePreview = URL.createObjectURL(file);
+  }
+
+  clearSelectedImage() {
+
+    // Free the memory held by the preview.
+    if (this.selectedImagePreview) {
+      URL.revokeObjectURL(this.selectedImagePreview);
+    }
+
+    this.selectedImage = null;
+    this.selectedImagePreview = null;
+  }
+
+  // Upload over HTTP; the server then broadcasts the
+  // new message to the channel over the socket.
+  private sendImage(caption: string) {
+
+    const form = new FormData();
+    form.append('image', this.selectedImage!);
+    form.append('userId', String(this.currentUser.id));
+    form.append('text', caption);
+
+    this.sending = true;
+    this.stopTyping();
+
+    this.http.post<ChatMessage>(
+      `${API}/channels/${this.channelId}/images`,
+      form
+    ).subscribe({
+
+      next: message => {
+        this.addMessage(message);
+        this.clearSelectedImage();
+        this.messageText = '';
+        this.errorMessage = '';
+        this.sending = false;
+      },
+
+      error: error => {
+        this.errorMessage =
+          error.error?.message || 'Could not send the image';
+        this.sending = false;
+      }
+
+    });
   }
 
   // Mirrors the server's rule: the sender, an admin

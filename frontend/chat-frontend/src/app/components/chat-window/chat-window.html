@@ -78,9 +78,17 @@
             class="message"
             *ngIf="item.kind === 'message'">
 
-            <div class="message-avatar">
-              {{ item.message.username.charAt(0).toUpperCase() }}
-            </div>
+            <img
+              *ngIf="avatarFor(item.message.userId) as avatar; else initialAvatar"
+              class="message-avatar message-avatar-image"
+              [src]="avatar"
+              alt="" />
+
+            <ng-template #initialAvatar>
+              <div class="message-avatar" aria-hidden="true">
+                {{ item.message.username.charAt(0).toUpperCase() }}
+              </div>
+            </ng-template>
 
             <div class="message-content">
 
@@ -96,7 +104,21 @@
 
               </div>
 
-              <p>
+              <!-- Picture message: click to open full size -->
+              <a
+                *ngIf="item.message.imageUrl"
+                class="message-image-link"
+                [href]="imageSrc(item.message.imageUrl)"
+                target="_blank"
+                rel="noopener">
+                <img
+                  class="message-image"
+                  [src]="imageSrc(item.message.imageUrl)"
+                  [alt]="'Image from ' + item.message.username"
+                  loading="lazy" />
+              </a>
+
+              <p *ngIf="item.message.text">
                 {{ item.message.text }}
               </p>
 
@@ -124,13 +146,46 @@
         {{ typingText }}
       </div>
 
+      <!-- Image waiting to be sent -->
+      <div class="image-preview" *ngIf="selectedImagePreview">
+
+        <img
+          [src]="selectedImagePreview"
+          alt="Selected image preview" />
+
+        <span>
+          {{ selectedImage?.name }}
+          <small>Add a caption below, then Send</small>
+        </span>
+
+        <button
+          type="button"
+          class="image-preview-remove"
+          aria-label="Remove selected image"
+          (click)="clearSelectedImage()">
+          ×
+        </button>
+
+      </div>
+
       <!-- Message Composer -->
       <footer class="message-composer">
+
+        <!-- Hidden file picker, opened by the 📎 button -->
+        <input
+          #imageInput
+          type="file"
+          class="visually-hidden"
+          [accept]="imageAccept"
+          (change)="onImageSelected($event)" />
 
         <button
           type="button"
           class="attachment-button"
-          title="Attach image">
+          title="Attach image"
+          aria-label="Attach image"
+          [disabled]="sending"
+          (click)="imageInput.click()">
           📎
         </button>
 
@@ -142,7 +197,7 @@
           [(ngModel)]="messageText"
           (input)="onTyping()"
           (keyup.enter)="sendMessage()"
-          placeholder="Type a message..."
+          [placeholder]="selectedImage ? 'Add a caption (optional)...' : 'Type a message...'"
         />
 
         <button
@@ -151,7 +206,7 @@
           [disabled]="sending || !socket.connected()"
           (click)="sendMessage()">
 
-          Send
+          {{ sending ? 'Sending…' : 'Send' }}
 
         </button>
 

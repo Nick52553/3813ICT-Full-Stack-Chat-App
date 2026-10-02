@@ -60,3 +60,14 @@
 .online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--signal); }
 .phase-label.status-offline { color: var(--danger); border-color: var(--danger); }
 .typing-indicator { min-height: 1.2rem; font-size: 0.72rem; font-style: italic; color: var(--text-muted); padding: 0 0 0.3rem; }
+
+.message-avatar-image { object-fit: cover; padding: 0; }
+.message-image-link { display: inline-block; margin: 0.35rem 0; }
+.message-image { display: block; max-width: min(320px, 100%); max-height: 260px; border-radius: var(--radius); border: 1px solid var(--border); object-fit: contain; background: var(--panel); }
+
+.image-preview { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; margin-bottom: 0.5rem; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); }
+.image-preview img { width: 56px; height: 56px; object-fit: cover; border-radius: var(--radius); }
+.image-preview span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; }
+.image-preview small { display: block; color: var(--text-muted); font-size: 0.7rem; }
+.image-preview-remove { background: none; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-muted); font-size: 1.1rem; line-height: 1; padding: 0.2rem 0.55rem; cursor: pointer; }
+.image-preview-remove:hover { color: var(--danger); border-color: var(--danger); }

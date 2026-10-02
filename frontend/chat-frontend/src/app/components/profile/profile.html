@@ -8,8 +8,45 @@
 
     <div class="profile-card">
 
-      <div class="profile-avatar">
-        {{ initials }}
+      <div class="avatar-column">
+
+        <img
+          *ngIf="avatarSrc; else initialsAvatar"
+          class="profile-avatar profile-avatar-image"
+          [src]="avatarSrc"
+          [alt]="currentUser.username + ' profile picture'" />
+
+        <ng-template #initialsAvatar>
+          <div class="profile-avatar" aria-hidden="true">
+            {{ initials }}
+          </div>
+        </ng-template>
+
+        <!-- Hidden file picker, opened by the button below -->
+        <input
+          #avatarInput
+          type="file"
+          class="visually-hidden"
+          [accept]="imageAccept"
+          (change)="onAvatarSelected($event)" />
+
+        <button
+          type="button"
+          class="avatar-button"
+          [disabled]="uploading"
+          (click)="avatarInput.click()">
+          {{ uploading ? 'Uploading…' : (avatarSrc ? 'Change picture' : 'Add picture') }}
+        </button>
+
+        <button
+          *ngIf="avatarSrc"
+          type="button"
+          class="avatar-button avatar-remove"
+          [disabled]="uploading"
+          (click)="removeAvatar()">
+          Remove
+        </button>
+
       </div>
 
       <div class="profile-details">
@@ -32,6 +69,18 @@
       </div>
 
     </div>
+
+    <p class="avatar-hint">
+      PNG, JPG or GIF, up to 2MB.
+    </p>
+
+    <p class="error" role="alert" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </p>
+
+    <p class="avatar-success" role="status" *ngIf="successMessage">
+      {{ successMessage }}
+    </p>
 
   </main>
 

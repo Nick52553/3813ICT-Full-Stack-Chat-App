@@ -23,3 +23,15 @@
 .detail { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.6rem; }
 .detail span { font-family: var(--font-display); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
 .detail strong { font-size: 0.9rem; }
+.avatar-column { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+.profile-avatar-image { object-fit: cover; }
+.avatar-button { width: 100%; padding: 0.35rem 0.6rem; background: var(--panel-raised); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-family: var(--font-display); font-size: 0.68rem; cursor: pointer; }
+.avatar-button:hover:not(:disabled) { border-color: var(--accent); }
+.avatar-button:disabled { opacity: 0.6; cursor: wait; }
+.avatar-remove { color: var(--text-muted); }
+.avatar-hint { margin-top: 0.75rem; font-size: 0.75rem; color: var(--text-muted); }
+.avatar-success { color: var(--signal); font-family: var(--font-display); font-size: 0.85rem; }
+
+@media (max-width: 480px) {
+  .profile-card { flex-direction: column; align-items: stretch; }
+}

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
@@ -44,6 +44,11 @@ class FakeSocketService {
   }
 }
 
+// Simulates picking a file in a hidden <input type="file">.
+function fileEvent(file: File): Event {
+  return { target: { files: [file], value: '' } } as unknown as Event;
+}
+
 function makeMessage(id: number, text: string, channelId = 1): ChatMessage {
   return {
     id,
@@ -52,6 +57,7 @@ function makeMessage(id: number, text: string, channelId = 1): ChatMessage {
     userId: 2,
     username: 'bobby',
     text,
+    imageUrl: null,
     timestamp: new Date().toISOString()
   };
 }
@@ -155,6 +161,40 @@ describe('ChatWindow', () => {
 
     expect(socket.sent).toEqual([{ channelId: 1, text: 'hi there' }]);
     expect(component.messageText).toBe('');
+  });
+
+  it('rejects a non-image attachment before uploading', () => {
+    component.onImageSelected(fileEvent(new File(['x'], 'doc.pdf', { type: 'application/pdf' })));
+
+    expect(component.selectedImage).toBeNull();
+    expect(component.errorMessage).toBe('Only PNG, JPG and GIF images are allowed');
+  });
+
+  it('uploads a selected image with its caption, then clears it', () => {
+    // jsdom has no object URLs - stub them for the preview.
+    URL.createObjectURL = () => 'blob:preview';
+    URL.revokeObjectURL = () => {};
+
+    const http = TestBed.inject(HttpTestingController);
+
+    component.onImageSelected(fileEvent(new File(['gif'], 'cat.gif', { type: 'image/gif' })));
+    expect(component.selectedImagePreview).toBe('blob:preview');
+
+    component.messageText = ' my cat ';
+    component.sendMessage();
+
+    const req = http.expectOne('http://localhost:3000/api/channels/1/images');
+    const body = req.request.body as FormData;
+    expect(body.get('text')).toBe('my cat');
+    expect((body.get('image') as File).name).toBe('cat.gif');
+
+    req.flush({ ...makeMessage(5, 'my cat'), imageUrl: '/uploads/chat/c.gif' });
+
+    expect(component.selectedImage).toBeNull();
+    expect(component.messageText).toBe('');
+    expect(socket.sent.length).toBe(0);
+    const last = component.timeline[component.timeline.length - 1] as any;
+    expect(last.message.imageUrl).toBe('/uploads/chat/c.gif');
   });
 
   it('does not send an empty message', async () => {

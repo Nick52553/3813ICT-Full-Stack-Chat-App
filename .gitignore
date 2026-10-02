@@ -3,3 +3,5 @@ dist/
 .angular/
 .env
 .DS_Store
+# Uploaded avatars and chat images (created at runtime)
+backend/uploads/
