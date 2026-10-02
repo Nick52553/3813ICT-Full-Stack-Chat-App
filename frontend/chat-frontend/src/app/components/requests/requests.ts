@@ -47,7 +47,9 @@ export class Requests implements OnInit {
 
   requestType: RequestType = 'group';
 
-  readonly limits = LIMITS;
+  // A getter rather than a copied field, so the shared
+  // constant is read when the template renders.
+  get limits() { return LIMITS; }
 
   // Set once Submit is pressed, so field errors don't
   // show before anything has been typed.

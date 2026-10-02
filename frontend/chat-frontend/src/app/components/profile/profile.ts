@@ -18,7 +18,9 @@ import {
 })
 export class Profile {
 
-  readonly imageAccept = IMAGE_ACCEPT;
+  // A getter rather than a copied field, so the shared
+  // constant is read when the template renders.
+  get imageAccept() { return IMAGE_ACCEPT; }
 
   currentUser: any = JSON.parse(
     localStorage.getItem('currentUser') ||

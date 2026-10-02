@@ -37,7 +37,9 @@ export class UserManagement implements OnInit {
   message = '';
   error = '';
 
-  readonly limits = LIMITS;
+  // A getter rather than a copied field, so the shared
+  // constant is read when the template renders.
+  get limits() { return LIMITS; }
 
   // Set once Create User is pressed, so field errors
   // don't show before the admin has typed anything.

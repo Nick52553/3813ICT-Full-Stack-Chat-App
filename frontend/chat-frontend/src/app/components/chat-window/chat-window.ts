@@ -64,7 +64,9 @@ export class ChatWindow implements OnInit, OnDestroy {
   // userId -> avatar path, for the pictures beside messages
   private avatars = new Map<number, string>();
 
-  readonly imageAccept = IMAGE_ACCEPT;
+  // A getter rather than a copied field, so the shared
+  // constant is read when the template renders.
+  get imageAccept() { return IMAGE_ACCEPT; }
 
   // Image picked with the 📎 button, waiting to be sent
   selectedImage: File | null = null;

@@ -1,303 +1,131 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-import { Navbar } from '../navbar/navbar';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpTestingController } from '@angular/common/http/testing';
 
-@Component({
-  selector: 'app-group-management',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    Navbar
-  ],
-  templateUrl: './group-management.html',
-  styleUrl: './group-management.css'
-})
-export class GroupManagement implements OnInit {
+import { GroupManagement } from './group-management';
+import { API, TEST_USERS, loginAs, serverError, testProviders } from '../../testing/test-utils';
 
-  groups: any[] = [];
-  users: any[] = [];
-  pendingRequests: any[] = [];
+describe('GroupManagement', () => {
+  let fixture: ComponentFixture<GroupManagement>;
+  let component: GroupManagement;
+  let http: HttpTestingController;
 
-  selectedGroupId: number | null = null;
-  selectedUserId: number | null = null;
-  selectedAdminId: number | null = null;
+  beforeEach(async () => {
+    loginAs(TEST_USERS.groupAdmin);
 
-  groupName = '';
-  description = '';
-  ageLimit = 0;
+    await TestBed.configureTestingModule({
+      imports: [GroupManagement],
+      providers: testProviders
+    }).compileComponents();
 
-  message = '';
-  error = '';
+    fixture = TestBed.createComponent(GroupManagement);
+    component = fixture.componentInstance;
+    http = TestBed.inject(HttpTestingController);
+  });
 
-  currentUser: any = JSON.parse(
-    localStorage.getItem('currentUser') ||
-    '{"id":0,"username":"User","role":"user"}'
-  );
+  afterEach(() => {
+    http.verify();
+    loginAs(null);
+  });
 
-  constructor(
-    private http: HttpClient
-  ) {}
+  it('loads groups, users, and the requests a group admin handles', () => {
+    fixture.detectChanges();
 
-  ngOnInit() {
+    http.expectOne(`${API}/groups`).flush([{ id: 1, name: 'Gaming' }]);
+    http.expectOne(`${API}/users`).flush([TEST_USERS.user]);
+    http.expectOne(`${API}/requests?status=pending`).flush([
+      { id: 1, type: 'group' },
+      { id: 2, type: 'channel' },
+      { id: 3, type: 'join' }
+    ]);
 
-    this.loadGroups();
-    this.loadUsers();
-    this.loadPendingRequests();
+    // New-group requests belong to the Super Admin's page.
+    expect(component.pendingRequests.map(r => r.id)).toEqual([2, 3]);
+  });
 
-  }
+  describe('creating a group', () => {
 
-  loadGroups() {
+    it('validates name, description and age limit first', () => {
+      Object.assign(component, { groupName: 'x', description: 'd'.repeat(301), ageLimit: 200 });
 
-    this.http.get<any[]>(
-      'http://localhost:3000/api/groups'
-    ).subscribe({
+      component.createGroup();
 
-      next: groups => {
-        this.groups = groups;
-      },
-
-      error: error => {
-        console.error(error);
-        this.error = 'Could not load groups.';
-      }
-
+      expect(component.errors.groupName).toContain('2-50');
+      expect(component.errors.description).toContain('300');
+      expect(component.errors.ageLimit).toContain('between 0 and 120');
+      http.expectNone(`${API}/groups`);
     });
 
-  }
+    it('sends a trimmed group and resets the form', () => {
+      Object.assign(component, { groupName: '  Music  ', description: ' Bands ', ageLimit: null });
 
-  loadUsers() {
+      component.createGroup();
 
-    this.http.get<any[]>(
-      'http://localhost:3000/api/users'
-    ).subscribe({
+      const req = http.expectOne(r => r.method === 'POST' && r.url === `${API}/groups`);
+      expect(req.request.body).toEqual({
+        name: 'Music', description: 'Bands', ageLimit: 0, adminIds: [], memberIds: []
+      });
+      req.flush({ id: 3, name: 'Music' });
 
-      next: users => {
-        this.users = users;
-      },
-
-      error: error => {
-        console.error(error);
-        this.error = 'Could not load users.';
-      }
-
+      expect(component.message).toContain('Music');
+      expect(component.submitted).toBe(false);
+      http.expectOne(`${API}/groups`).flush([]);
     });
 
-  }
+    it('shows a duplicate-name error from the server', () => {
+      component.groupName = 'Gaming';
+      component.createGroup();
 
-  loadPendingRequests() {
+      const { body, opts } = serverError(409, 'A group with that name already exists');
+      http.expectOne(`${API}/groups`).flush(body, opts);
 
-    this.http.get<any[]>(
-      `http://localhost:3000/api/requests?status=pending&reviewerId=${this.currentUser.id}`
-    ).subscribe({
+      expect(component.error).toBe('A group with that name already exists');
+    });
+  });
 
-      next: requests => {
+  describe('members and admins', () => {
 
-        this.pendingRequests =
-          requests.filter(
-            request =>
-              request.type === 'channel' ||
-              request.type === 'ban' ||
-              request.type === 'groupRemoval'
-          );
+    it('asks for a group and a user before adding a member', () => {
+      component.addMember();
 
-      },
-
-      error: error => {
-
-        console.error(error);
-
-        this.error =
-          'Could not load pending requests.';
-
-      }
-
+      expect(component.error).toBe('Please select both a group and a user.');
+      http.expectNone(() => true);
     });
 
-  }
+    it('adds the selected user to the selected group', () => {
+      Object.assign(component, { selectedGroupId: 1, selectedUserId: 3 });
 
-  createGroup() {
+      component.addMember();
 
-    this.message = '';
-    this.error = '';
-
-    if (!this.groupName.trim()) {
-
-      this.error =
-        'Please enter a group name.';
-
-      return;
-    }
-
-    this.http.post<any>(
-      'http://localhost:3000/api/groups',
-      {
-        name: this.groupName.trim(),
-        description: this.description.trim(),
-        ageLimit: this.ageLimit,
-        adminIds: [],
-        memberIds: []
-      }
-    ).subscribe({
-
-      next: group => {
-
-        this.message =
-          `${group.name} was created successfully.`;
-
-        this.groupName = '';
-        this.description = '';
-        this.ageLimit = 0;
-
-        this.loadGroups();
-
-      },
-
-      error: error => {
-
-        this.error =
-          error.error?.message ||
-          'Could not create group.';
-
-      }
-
+      const req = http.expectOne(`${API}/groups/1/members`);
+      expect(req.request.body).toEqual({ userId: 3 });
+      req.flush({});
+      http.expectOne(`${API}/groups`).flush([]);
     });
 
-  }
+    it('promotes and demotes admins through the right endpoints', () => {
+      Object.assign(component, { selectedGroupId: 1, selectedAdminId: 3 });
 
-  addMember() {
+      component.assignAdmin();
+      http.expectOne(`${API}/groups/1/admins`).flush({});
+      http.expectOne(`${API}/groups`).flush([]);
 
-    this.message = '';
-    this.error = '';
+      component.demoteAdmin();
+      http.expectOne(`${API}/groups/1/admins/demote`).flush({});
+      http.expectOne(`${API}/groups`).flush([]);
 
-    if (
-      this.selectedGroupId === null ||
-      this.selectedUserId === null
-    ) {
-
-      this.error =
-        'Please select a group and a user.';
-
-      return;
-    }
-
-    this.http.post<any>(
-      `http://localhost:3000/api/groups/${this.selectedGroupId}/members`,
-      {
-        userId: this.selectedUserId
-      }
-    ).subscribe({
-
-      next: () => {
-
-        this.message =
-          'User added to group successfully.';
-
-        this.loadGroups();
-
-      },
-
-      error: error => {
-
-        this.error =
-          error.error?.message ||
-          'Could not add user to group.';
-
-      }
-
+      expect(component.message).toBe('Group admin demoted successfully.');
     });
+  });
 
-  }
+  it('reviews a request as the logged-in admin', () => {
+    component.reviewRequest(5, 'denied');
 
-  assignAdmin() {
+    const req = http.expectOne(`${API}/requests/5`);
+    expect(req.request.body).toEqual({ status: 'denied', reviewerId: 2 });
+    req.flush({ message: 'Request denied' });
 
-    this.message = '';
-    this.error = '';
-
-    if (
-      this.selectedGroupId === null ||
-      this.selectedAdminId === null
-    ) {
-
-      this.error =
-        'Please select a group and a user.';
-
-      return;
-    }
-
-    this.http.post<any>(
-      `http://localhost:3000/api/groups/${this.selectedGroupId}/admins`,
-      {
-        userId: this.selectedAdminId
-      }
-    ).subscribe({
-
-      next: () => {
-
-        this.message =
-          'Group admin assigned successfully.';
-
-        this.loadGroups();
-
-      },
-
-      error: error => {
-
-        this.error =
-          error.error?.message ||
-          'Could not assign group admin.';
-
-      }
-
-    });
-
-  }
-
-  reviewRequest(
-    requestId: number,
-    status: 'approved' | 'denied'
-  ) {
-
-    this.message = '';
-    this.error = '';
-
-    this.http.put<any>(
-      `http://localhost:3000/api/requests/${requestId}`,
-      {
-        status,
-        reviewerId: this.currentUser.id
-      }
-    ).subscribe({
-
-      next: response => {
-
-        this.message =
-          response.message ||
-          (
-            status === 'approved'
-              ? 'Request approved.'
-              : 'Request denied.'
-          );
-
-        this.loadPendingRequests();
-        this.loadGroups();
-
-      },
-
-      error: error => {
-
-        console.error(error);
-
-        this.error =
-          error.error?.message ||
-          'Could not review request.';
-
-      }
-
-    });
-
-  }
-
-}
+    expect(component.message).toBe('Request denied.');
+    http.expectOne(`${API}/requests?status=pending`).flush([]);
+    http.expectOne(`${API}/groups`).flush([]);
+  });
+});

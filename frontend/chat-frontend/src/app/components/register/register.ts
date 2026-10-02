@@ -26,7 +26,9 @@ import {
 })
 export class Register {
 
-  readonly limits = LIMITS;
+  // A getter rather than a copied field, so the shared
+  // constant is read when the template renders.
+  get limits() { return LIMITS; }
 
   username = '';
   password = '';
