@@ -23,6 +23,11 @@ const {
   firstError
 } = require('./validation');
 const {
+  hashPassword,
+  verifyPassword,
+  hashPlaintextPasswords
+} = require('./passwords');
+const {
   UPLOAD_DIR,
   singleImage,
   saveImage,
@@ -113,7 +118,8 @@ async function insertUser({ username, password, age, role }) {
   const newUser = {
     id: await getNextId('users'),
     username: username.trim(),
-    password,
+    // Only the bcrypt hash is stored - see passwords.js.
+    password: await hashPassword(password),
     age: Number(age) || 0,
     role
   };
@@ -377,12 +383,20 @@ app.post('/api/login', async (req, res) => {
     });
   }
 
+  // Find by username only, then check the password
+  // against the stored hash.
   const user = await usersCollection().findOne({
-    username,
-    password
+    username: username.trim()
   });
 
-  if (!user) {
+  const passwordOk = await verifyPassword(
+    password,
+    user ? user.password : null
+  );
+
+  // Same message either way, so the response doesn't
+  // reveal whether the username exists.
+  if (!user || !passwordOk) {
     return res.status(401).json({
       message: 'Invalid username or password'
     });
@@ -1754,7 +1768,15 @@ setupSockets(io, {
 });
 
 connectDb()
-  .then(() => {
+  .then(async () => {
+
+    // Upgrade any accounts created before passwords
+    // were hashed (does nothing once they all are).
+    const upgraded = await hashPlaintextPasswords(usersCollection());
+
+    if (upgraded) {
+      console.log(`Hashed ${upgraded} plain-text password(s)`);
+    }
 
     server.listen(PORT, () => {
 

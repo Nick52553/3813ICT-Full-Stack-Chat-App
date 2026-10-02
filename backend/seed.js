@@ -4,6 +4,10 @@ const {
   connectDb,
   closeDb
 } = require('./db');
+const {
+  hashPassword,
+  isHashed
+} = require('./passwords');
 
 // ====================================================
 // SEED MONGODB FROM THE PHASE 1 JSON FILES
@@ -81,6 +85,16 @@ async function seed() {
     const docs = readJson(file);
 
     removeStaleUserIds(name, docs, validUserIds);
+
+    // The JSON holds plain-text passwords from Phase 1;
+    // MongoDB only ever gets the bcrypt hash.
+    if (name === 'users') {
+      for (const user of docs) {
+        if (!isHashed(user.password)) {
+          user.password = await hashPassword(String(user.password));
+        }
+      }
+    }
 
     await db.collection(name).drop().catch(() => {});
 
