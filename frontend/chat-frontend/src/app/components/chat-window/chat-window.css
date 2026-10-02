@@ -55,3 +55,8 @@
 
 .phase-label { align-self: flex-start; margin: 15px 0 5px; padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-muted); font-family: var(--font-display); font-size: 9px; letter-spacing: 0.08em; }
 .chat-error { color: var(--danger); }
+
+.chat-header .online-users { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; margin-top: 0.4rem; font-size: 0.72rem; }
+.online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--signal); }
+.phase-label.status-offline { color: var(--danger); border-color: var(--danger); }
+.typing-indicator { min-height: 1.2rem; font-size: 0.72rem; font-style: italic; color: var(--text-muted); padding: 0 0 0.3rem; }

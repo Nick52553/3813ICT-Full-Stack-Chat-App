@@ -12,6 +12,17 @@
         <div>
           <h1># {{ channelName }}</h1>
           <p>{{ groupName }}</p>
+
+          <!-- Who is viewing this channel right now -->
+          <p
+            class="online-users"
+            *ngIf="onlineUsers.length > 0">
+            <span class="online-dot" aria-hidden="true"></span>
+            {{ onlineUsers.length }} online:
+            <span *ngFor="let user of onlineUsers; let last = last">
+              {{ user.username }}{{ last ? '' : ',' }}
+            </span>
+          </p>
         </div>
 
         <a
@@ -22,13 +33,19 @@
 
       </header>
 
-      <!-- Phase 1 Notice -->
-      <div class="phase-label">
-        PHASE 1 PROTOTYPE
+      <!-- Live connection status -->
+      <div
+        class="phase-label"
+        [class.status-offline]="!socket.connected()"
+        role="status">
+        {{ socket.connected() ? 'LIVE' : 'RECONNECTING…' }}
       </div>
 
-      <!-- Messages -->
-      <section class="messages">
+      <!-- Messages and join/leave notices -->
+      <section
+        class="messages"
+        aria-live="polite"
+        aria-label="Chat messages">
 
         <div class="system-message">
           You joined the room.
@@ -36,58 +53,76 @@
 
         <div
           class="system-message"
-          *ngIf="!errorMessage && messages.length === 0">
+          *ngIf="!errorMessage && timeline.length === 0">
           No messages yet. Say hello!
         </div>
 
         <div
           class="system-message chat-error"
+          role="alert"
           *ngIf="errorMessage">
           {{ errorMessage }}
         </div>
 
-        <div
-          class="message"
-          *ngFor="let message of messages">
+        <ng-container *ngFor="let item of timeline; trackBy: trackItem">
 
-          <div class="message-avatar">
-            {{ message.username.charAt(0).toUpperCase() }}
+          <!-- Join / leave notice -->
+          <div
+            class="system-message"
+            *ngIf="item.kind === 'notice'">
+            {{ item.text }} · {{ formatTime(item.timestamp) }}
           </div>
 
-          <div class="message-content">
+          <!-- Chat message -->
+          <div
+            class="message"
+            *ngIf="item.kind === 'message'">
 
-            <div class="message-info">
+            <div class="message-avatar">
+              {{ item.message.username.charAt(0).toUpperCase() }}
+            </div>
 
-              <strong>
-                {{ message.username }}
-              </strong>
+            <div class="message-content">
 
-              <span>
-                {{ formatTime(message.timestamp) }}
-              </span>
+              <div class="message-info">
+
+                <strong>
+                  {{ item.message.username }}
+                </strong>
+
+                <span>
+                  {{ formatTime(item.message.timestamp) }}
+                </span>
+
+              </div>
+
+              <p>
+                {{ item.message.text }}
+              </p>
+
+              <!-- Own messages, or any message for group admins / Super Admin -->
+              <button
+                *ngIf="canDelete(item.message)"
+                type="button"
+                class="delete-message-button"
+                (click)="deleteMessage(item.message.id)">
+
+                Delete
+
+              </button>
 
             </div>
 
-            <p>
-              {{ message.text }}
-            </p>
-
-            <!-- Own messages, or any message for group admins / Super Admin -->
-            <button
-              *ngIf="canDelete(message)"
-              type="button"
-              class="delete-message-button"
-              (click)="deleteMessage(message.id)">
-
-              Delete
-
-            </button>
-
           </div>
 
-        </div>
+        </ng-container>
 
       </section>
+
+      <!-- "bobby is typing…" -->
+      <div class="typing-indicator" aria-live="polite">
+        {{ typingText }}
+      </div>
 
       <!-- Message Composer -->
       <footer class="message-composer">
@@ -102,7 +137,10 @@
         <input
           type="text"
           name="message"
+          aria-label="Message"
+          maxlength="2000"
           [(ngModel)]="messageText"
+          (input)="onTyping()"
           (keyup.enter)="sendMessage()"
           placeholder="Type a message..."
         />
@@ -110,7 +148,7 @@
         <button
           type="button"
           class="send-button"
-          [disabled]="sending"
+          [disabled]="sending || !socket.connected()"
           (click)="sendMessage()">
 
           Send

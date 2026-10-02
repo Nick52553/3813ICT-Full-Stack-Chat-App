@@ -1,16 +1,29 @@
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
+const { Server } = require('socket.io');
 const {
   connectDb,
   getDb,
   getNextId
 } = require('./db');
+const {
+  setupSockets,
+  channelRoom
+} = require('./sockets');
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Express and Socket.io share one HTTP server (port 3000).
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: { origin: '*' }
+});
 
 // ====================================================
 // AUDIT LOG HELPERS
@@ -1351,37 +1364,27 @@ app.get('/api/channels/:channelId/messages', async (req, res) => {
   res.json(messages.reverse());
 });
 
-// Send a message to a channel.
-// Body: { userId, text }
-app.post('/api/channels/:channelId/messages', async (req, res) => {
+// Validate and store a message. Shared by the REST
+// route below and the "sendMessage" socket event.
+// Returns { message } or { error: { status, message } }.
+async function saveMessage(user, channel, rawText) {
 
   const text =
-    typeof req.body.text === 'string'
-      ? req.body.text.trim()
+    typeof rawText === 'string'
+      ? rawText.trim()
       : '';
 
   if (!text) {
-    return res.status(400).json({
-      message: 'Message text is required'
-    });
+    return { error: { status: 400, message: 'Message text is required' } };
   }
 
   if (text.length > MAX_MESSAGE_LENGTH) {
-    return res.status(400).json({
-      message:
-        `Messages can be at most ${MAX_MESSAGE_LENGTH} characters`
-    });
-  }
-
-  const { user, channel, error } = await loadChannelAccess(
-    req.body.userId,
-    req.params.channelId
-  );
-
-  if (error) {
-    return res.status(error.status).json({
-      message: error.message
-    });
+    return {
+      error: {
+        status: 400,
+        message: `Messages can be at most ${MAX_MESSAGE_LENGTH} characters`
+      }
+    };
   }
 
   const newMessage = {
@@ -1400,7 +1403,38 @@ app.post('/api/channels/:channelId/messages', async (req, res) => {
 
   delete newMessage._id;
 
-  res.status(201).json(newMessage);
+  return { message: newMessage };
+}
+
+// Send a message to a channel.
+// Body: { userId, text }
+// The chat window sends through the socket instead; this
+// route is kept for non-socket clients and testing.
+app.post('/api/channels/:channelId/messages', async (req, res) => {
+
+  const { user, channel, error } = await loadChannelAccess(
+    req.body.userId,
+    req.params.channelId
+  );
+
+  if (error) {
+    return res.status(error.status).json({
+      message: error.message
+    });
+  }
+
+  const result = await saveMessage(user, channel, req.body.text);
+
+  if (result.error) {
+    return res.status(result.error.status).json({
+      message: result.error.message
+    });
+  }
+
+  // Live update for anyone viewing the channel.
+  io.to(channelRoom(channel.id)).emit('newMessage', result.message);
+
+  res.status(201).json(result.message);
 });
 
 // Delete a message. Allowed for the sender, an admin
@@ -1443,6 +1477,12 @@ app.delete('/api/messages/:messageId', async (req, res) => {
   }
 
   await messagesCollection().deleteOne({ id: message.id });
+
+  // Remove it from everyone's screen straight away.
+  io.to(channelRoom(message.channelId)).emit('messageDeleted', {
+    id: message.id,
+    channelId: message.channelId
+  });
 
   // Only log moderation, not people tidying up
   // their own messages.
@@ -1488,13 +1528,18 @@ app.get('/api/audit', async (req, res) => {
 // START SERVER
 // ====================================================
 
+setupSockets(io, {
+  loadChannelAccess,
+  saveMessage
+});
+
 connectDb()
   .then(() => {
 
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
 
       console.log(
-        `Server running on http://localhost:${PORT}`
+        `Server running on http://localhost:${PORT} (REST + Socket.io)`
       );
 
     });
