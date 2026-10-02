@@ -86,17 +86,32 @@ function joinedChannelIds(socket) {
 
 // Run a handler, turning any thrown error into a
 // failed ack so one bad event can't crash the server.
-function safely(handler) {
-  return async (payload, ack) => {
+//
+// Events from one socket are also run one at a time, in the
+// order they arrived. Handlers wait on the database, so
+// without this a "sendMessage" sent straight after
+// "joinChannel" could run before the join had finished and
+// be refused ("Join the channel before sending messages").
+const queues = new WeakMap();
+
+function safely(socket, handler) {
+  return (payload, ack) => {
 
     const reply = typeof ack === 'function' ? ack : () => {};
 
-    try {
-      await handler(payload || {}, reply);
-    } catch (error) {
-      console.error('Socket handler error:', error.message);
-      reply({ ok: false, message: 'Something went wrong' });
-    }
+    const run = async () => {
+      try {
+        await handler(payload || {}, reply);
+      } catch (error) {
+        console.error('Socket handler error:', error.message);
+        reply({ ok: false, message: 'Something went wrong' });
+      }
+    };
+
+    const next = (queues.get(socket) || Promise.resolve()).then(run);
+    queues.set(socket, next);
+
+    return next;
   };
 }
 
@@ -112,7 +127,7 @@ function setupSockets(io, { loadChannelAccess, saveMessage }) {
     // JOIN A CHANNEL
     // ------------------------------------------------
 
-    socket.on('joinChannel', safely(async ({ userId, channelId }, ack) => {
+    socket.on('joinChannel', safely(socket, async ({ userId, channelId }, ack) => {
 
       const { user, channel, error } =
         await loadChannelAccess(userId, channelId);
@@ -157,7 +172,7 @@ function setupSockets(io, { loadChannelAccess, saveMessage }) {
     // LEAVE A CHANNEL
     // ------------------------------------------------
 
-    socket.on('leaveChannel', safely(async ({ channelId }, ack) => {
+    socket.on('leaveChannel', safely(socket, async ({ channelId }, ack) => {
 
       const room = channelRoom(channelId);
 
@@ -176,7 +191,7 @@ function setupSockets(io, { loadChannelAccess, saveMessage }) {
     // SEND A MESSAGE
     // ------------------------------------------------
 
-    socket.on('sendMessage', safely(async ({ channelId, text }, ack) => {
+    socket.on('sendMessage', safely(socket, async ({ channelId, text }, ack) => {
 
       // The sender must have joined the room first, which
       // is where their access was checked.
@@ -209,7 +224,7 @@ function setupSockets(io, { loadChannelAccess, saveMessage }) {
     // TYPING INDICATOR
     // ------------------------------------------------
 
-    socket.on('typing', safely(async ({ channelId, isTyping }) => {
+    socket.on('typing', safely(socket, async ({ channelId, isTyping }) => {
 
       const room = channelRoom(channelId);
 

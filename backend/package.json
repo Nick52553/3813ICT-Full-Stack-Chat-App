@@ -6,7 +6,8 @@
   "scripts": {
     "test": "mocha",
     "start": "node server.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "start:e2e": "node e2e-server.js"
   },
   "keywords": [],
   "author": "",

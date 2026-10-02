@@ -142,6 +142,17 @@ describe('Sockets: real-time chat', () => {
       expect((await waitFor(bobby, 'newMessage')).text).to.equal('hi all');
     });
 
+    it('handles a message sent straight after joining, without waiting', async () => {
+      // Regression: found by the Cypress chat test. The send
+      // used to overtake the (slower) join and be refused.
+      const bobby = await newClient();
+
+      bobby.emit('joinChannel', { userId: 3, channelId: 1 }, () => {});
+      const ack = await ask(bobby, 'sendMessage', { channelId: 1, text: 'quick!' });
+
+      expect(ack.ok, ack.message).to.equal(true);
+    });
+
     it('saves socket messages so they appear in the history', async () => {
       const bobby = await joined(3);
 

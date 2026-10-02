@@ -38,7 +38,7 @@
         class="phase-label"
         [class.status-offline]="!socket.connected()"
         role="status">
-        {{ socket.connected() ? 'LIVE' : 'RECONNECTING…' }}
+        {{ !socket.connected() ? 'RECONNECTING…' : (joined ? 'LIVE' : 'JOINING…') }}
       </div>
 
       <!-- Messages and join/leave notices -->
@@ -203,7 +203,7 @@
         <button
           type="button"
           class="send-button"
-          [disabled]="sending || !socket.connected()"
+          [disabled]="sending || !joined || !socket.connected()"
           (click)="sendMessage()">
 
           {{ sending ? 'Sending…' : 'Send' }}

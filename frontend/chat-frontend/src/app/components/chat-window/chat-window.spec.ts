@@ -197,6 +197,19 @@ describe('ChatWindow', () => {
     expect(last.message.imageUrl).toBe('/uploads/chat/c.gif');
   });
 
+  it('marks the channel as joined once the server confirms', () => {
+    expect(component.joined).toBe(true);
+  });
+
+  it('does not send before the join is confirmed', async () => {
+    component.joined = false;
+    component.messageText = 'too early';
+
+    await component.sendMessage();
+
+    expect(socket.sent.length).toBe(0);
+  });
+
   it('does not send an empty message', async () => {
     component.messageText = '   ';
 

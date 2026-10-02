@@ -29,14 +29,19 @@ export class SocketService implements OnDestroy {
 
       this.socket = io(SOCKET_URL);
 
+      let connectedBefore = false;
+
       this.socket.on('connect', () => {
         this.connected.set(true);
 
-        // Rejoin after a reconnect - the server forgets
-        // our rooms when the connection drops.
-        if (this.currentJoin) {
+        // Rejoin after a REconnect - the server forgets our
+        // rooms when the connection drops. (On the first
+        // connect, the original join is already queued.)
+        if (connectedBefore && this.currentJoin) {
           this.socket!.emit('joinChannel', this.currentJoin, () => {});
         }
+
+        connectedBefore = true;
       });
 
       this.socket.on('disconnect', () => {

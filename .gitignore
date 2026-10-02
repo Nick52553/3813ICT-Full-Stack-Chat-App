@@ -5,3 +5,7 @@ dist/
 .DS_Store
 # Uploaded avatars and chat images (created at runtime)
 backend/uploads/
+
+# Cypress output (created when e2e tests fail)
+frontend/chat-frontend/cypress/screenshots/
+frontend/chat-frontend/cypress/videos/

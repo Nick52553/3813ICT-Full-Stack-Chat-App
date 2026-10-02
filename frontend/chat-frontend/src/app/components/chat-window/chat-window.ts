@@ -84,6 +84,10 @@ export class ChatWindow implements OnInit, OnDestroy {
 
   sending = false;
 
+  // True once the server has confirmed we're in the channel.
+  // Sending is blocked until then.
+  joined = false;
+
   currentUser: any = JSON.parse(
     localStorage.getItem('currentUser') ||
     '{"username":"User","role":"user"}'
@@ -188,6 +192,7 @@ export class ChatWindow implements OnInit, OnDestroy {
     }
 
     this.onlineUsers = ack.users || [];
+    this.joined = true;
   }
 
   loadMessages() {
@@ -387,7 +392,7 @@ export class ChatWindow implements OnInit, OnDestroy {
 
     const text = this.messageText.trim();
 
-    if (this.sending) {
+    if (this.sending || !this.joined) {
       return;
     }
 
