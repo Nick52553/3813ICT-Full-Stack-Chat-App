@@ -1,6 +1,6 @@
 # Phase 2 — Nicholas Bailey — s5393017
 
-**Workshop:** _[add your workshop day and time]_
+**Workshop:** _[TUESDAY 6th October]
 **Repository:** https://github.com/Nick52553/3813ICT-Full-Stack-Chat-App
 
 ---

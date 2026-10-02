@@ -30,8 +30,8 @@
           </p>
 
           <div class="group-stats">
-            <span>{{ group.members }} members</span>
-            <span>{{ group.channels }} channels</span>
+            <span>{{ group.memberIds?.length || 0 }} members</span>
+            <span>{{ channelCount(group) }} channels</span>
           </div>
 
           <div class="group-actions">

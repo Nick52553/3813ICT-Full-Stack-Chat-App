@@ -57,6 +57,22 @@ module.exports = defineConfig({
           return null;
         },
 
+        // Remove every user, so the first-run Register page
+        // shows (used by the storyboard screenshots).
+        async clearUsers() {
+
+          const client = new MongoClient(MONGO_URL);
+
+          try {
+            await client.connect();
+            await client.db('chatapp_e2e').collection('users').deleteMany({});
+          } finally {
+            await client.close();
+          }
+
+          return null;
+        },
+
         // Usernames and passwords of the test accounts.
         users() {
           return USERS;

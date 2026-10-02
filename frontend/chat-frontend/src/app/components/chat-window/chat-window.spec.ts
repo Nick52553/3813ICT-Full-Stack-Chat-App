@@ -210,6 +210,19 @@ describe('ChatWindow', () => {
     expect(socket.sent.length).toBe(0);
   });
 
+  it('keeps what you typed while the previous message was still sending', async () => {
+    // Regression: found by the storyboard screenshots - the
+    // late "clear the box" used to wipe the next message.
+    component.messageText = 'first';
+
+    const sending = component.sendMessage();
+    component.messageText = 'second, typed while waiting';
+    await sending;
+
+    expect(socket.sent).toEqual([{ channelId: 1, text: 'first' }]);
+    expect(component.messageText).toBe('second, typed while waiting');
+  });
+
   it('does not send an empty message', async () => {
     component.messageText = '   ';
 

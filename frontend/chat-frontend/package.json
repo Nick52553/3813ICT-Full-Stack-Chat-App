@@ -11,7 +11,9 @@
     "e2e:backend": "npm --prefix ../../backend run start:e2e",
     "e2e:frontend": "ng serve --port 4200",
     "cy:run": "node cypress/run.js",
-    "cy:open": "node cypress/run.js open"
+    "cy:open": "node cypress/run.js open",
+    "docs:screenshots": "start-server-and-test e2e:backend http://localhost:3000 e2e:frontend http://localhost:4200 cy:docs",
+    "cy:docs": "node cypress/run.js docs"
   },
   "private": true,
   "packageManager": "npm@11.4.2",

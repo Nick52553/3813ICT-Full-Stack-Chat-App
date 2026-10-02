@@ -26,6 +26,23 @@ describe('Permissions by role', () => {
     cy.location('pathname').should('eq', '/dashboard');
   });
 
+  it('a group admin can open Channel Management from the navbar', () => {
+    // Regression: /channels/manage used to be caught by the
+    // /channels/:groupId route and show a channel list instead.
+    cy.visitAs('ben', '/dashboard');
+
+    cy.contains('.navbar a', 'Channel Management').click();
+
+    cy.location('pathname').should('eq', '/channels/manage');
+    cy.contains('h1', 'Channel Management');
+  });
+
+  it('a regular user cannot open Channel Management', () => {
+    cy.visitAs('bobby', '/channels/manage');
+
+    cy.location('pathname').should('eq', '/dashboard');
+  });
+
   it('the Super Admin can reach user management and the audit log', () => {
     cy.visitAs('super', '/user-management');
 

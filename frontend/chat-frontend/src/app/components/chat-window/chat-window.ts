@@ -423,7 +423,7 @@ export class ChatWindow implements OnInit, OnDestroy {
     // The broadcast usually arrives first; this covers
     // the case where it doesn't.
     this.addMessage(ack.message);
-    this.messageText = '';
+    this.clearComposerIfUnchanged(text);
     this.errorMessage = '';
   }
 
@@ -468,12 +468,23 @@ export class ChatWindow implements OnInit, OnDestroy {
     this.selectedImagePreview = null;
   }
 
+  // Empty the message box after a send - but only if it still
+  // holds what was sent. If the user has started typing the
+  // next message while waiting for the server, keep that.
+  private clearComposerIfUnchanged(sentText: string) {
+    if (this.messageText.trim() === sentText) {
+      this.messageText = '';
+    }
+  }
+
   // Upload over HTTP; the server then broadcasts the
   // new message to the channel over the socket.
   private sendImage(caption: string) {
 
+    const file = this.selectedImage!;
+
     const form = new FormData();
-    form.append('image', this.selectedImage!);
+    form.append('image', file);
     form.append('userId', String(this.currentUser.id));
     form.append('text', caption);
 
@@ -487,8 +498,13 @@ export class ChatWindow implements OnInit, OnDestroy {
 
       next: message => {
         this.addMessage(message);
-        this.clearSelectedImage();
-        this.messageText = '';
+
+        // Unless another image was picked during the upload.
+        if (this.selectedImage === file) {
+          this.clearSelectedImage();
+        }
+
+        this.clearComposerIfUnchanged(caption);
         this.errorMessage = '';
         this.sending = false;
       },

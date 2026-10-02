@@ -19,6 +19,9 @@ export class GroupList implements OnInit {
 
   groups: any[] = [];
 
+  // groupId -> number of channels, for the group cards
+  private channelCounts = new Map<number, number>();
+
   currentUser: any = JSON.parse(
     localStorage.getItem('currentUser') ||
     '{"id":0,"username":"User","role":"user"}'
@@ -33,6 +36,28 @@ export class GroupList implements OnInit {
 
   ngOnInit() {
     this.loadGroups();
+    this.loadChannelCounts();
+  }
+
+  loadChannelCounts() {
+
+    this.http.get<any[]>(
+      'http://localhost:3000/api/channels'
+    ).subscribe({
+      next: channels => {
+        this.channelCounts.clear();
+        for (const channel of channels) {
+          this.channelCounts.set(
+            channel.groupId,
+            (this.channelCounts.get(channel.groupId) || 0) + 1
+          );
+        }
+      }
+    });
+  }
+
+  channelCount(group: any): number {
+    return this.channelCounts.get(group.id) || 0;
   }
 
   loadGroups() {

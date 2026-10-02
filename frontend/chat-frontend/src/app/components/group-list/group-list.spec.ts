@@ -28,6 +28,9 @@ describe('GroupList', () => {
 
     fixture.detectChanges();
     http.expectOne(`${API}/groups`).flush(GROUPS);
+    http.expectOne(`${API}/channels`).flush([
+      { id: 1, groupId: 1 }, { id: 2, groupId: 1 }, { id: 3, groupId: 2 }
+    ]);
   });
 
   afterEach(() => {
@@ -37,6 +40,14 @@ describe('GroupList', () => {
 
   it('loads groups from the server', () => {
     expect(component.groups.map(g => g.name)).toEqual(['Gaming', 'Study']);
+  });
+
+  it('shows member and channel counts on each card', () => {
+    fixture.detectChanges();
+
+    const firstCard = (fixture.nativeElement as HTMLElement).querySelector('.group-card')!;
+    expect(firstCard.textContent).toContain('1 members');
+    expect(firstCard.textContent).toContain('2 channels');
   });
 
   it('knows which groups the user belongs to and admins', () => {

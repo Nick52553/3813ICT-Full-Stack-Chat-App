@@ -25,9 +25,16 @@
       No audit entries recorded yet.
     </p>
 
-    <table
-      class="audit-table"
-      *ngIf="entries.length > 0">
+    <!-- Scrolls sideways on narrow screens instead of cutting
+         columns off; focusable so keyboard users can scroll it. -->
+    <div
+      class="table-scroll"
+      *ngIf="entries.length > 0"
+      tabindex="0"
+      role="region"
+      aria-label="Audit log entries">
+
+    <table class="audit-table">
 
       <thead>
         <tr>
@@ -40,7 +47,7 @@
 
       <tbody>
         <tr *ngFor="let entry of entries">
-          <td>{{ entry.timestamp }}</td>
+          <td>{{ entry.timestamp | date:'d MMM y, h:mm:ss a' }}</td>
           <td>{{ entry.action }}</td>
           <td>{{ entry.actorId }}</td>
           <td>{{ entry.details | json }}</td>
@@ -48,6 +55,8 @@
       </tbody>
 
     </table>
+
+    </div>
 
   </main>
 

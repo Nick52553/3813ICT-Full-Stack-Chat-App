@@ -6,9 +6,12 @@
   border-bottom: 1px solid var(--border);
   padding: 0.85rem 1.75rem;
   font-family: var(--font-display);
+  /* Admins have more links - wrap rather than overflow. */
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
 }
 
-.navbar-left { display: flex; align-items: center; gap: 1.75rem; }
+.navbar-left { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.75rem; }
 
 .navbar .logo {
   color: var(--accent);
@@ -68,3 +71,14 @@
   transition: all 0.15s ease;
 }
 .navbar-right button:hover { border-color: var(--danger); color: var(--danger); }
+
+/* Phones: logo on its own row, links wrap onto as many
+   lines as needed, user + logout underneath - every link
+   stays visible and tappable. */
+@media (max-width: 700px) {
+  .navbar { flex-direction: column; align-items: stretch; padding: 0.75rem 1rem; }
+  .navbar-left { gap: 0.55rem 1.1rem; }
+  .navbar .logo { flex-basis: 100%; padding: 0 0 0.5rem; border-right: none; border-bottom: 1px solid var(--border); }
+  .navbar-left a { padding: 0.2rem 0; }
+  .navbar-right { justify-content: flex-end; }
+}

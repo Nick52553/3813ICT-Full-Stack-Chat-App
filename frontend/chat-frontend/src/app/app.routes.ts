@@ -60,16 +60,18 @@ export const routes: Routes = [
     canActivate: [groupAdminGuard]
   },
 
-  {
-    path: 'channels/:groupId',
-    component: ChannelList,
-    canActivate: [authGuard]
-  },
-
+  // Must come before 'channels/:groupId' - routes match in
+  // order, and ':groupId' would otherwise match "manage".
   {
     path: 'channels/manage',
     component: ChannelManagement,
     canActivate: [groupAdminGuard]
+  },
+
+  {
+    path: 'channels/:groupId',
+    component: ChannelList,
+    canActivate: [authGuard]
   },
 
   {

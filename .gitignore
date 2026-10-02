@@ -9,3 +9,4 @@ backend/uploads/
 # Cypress output (created when e2e tests fail)
 frontend/chat-frontend/cypress/screenshots/
 frontend/chat-frontend/cypress/videos/
+frontend/chat-frontend/cypress/docs-screenshots/

@@ -42,3 +42,8 @@
 .error-message {
   color: var(--text-muted);
 }
+
+/* Narrow screens: scroll the table sideways rather than clip it. */
+.table-scroll { overflow-x: auto; border-radius: var(--radius); }
+.table-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.table-scroll .audit-table { min-width: 640px; }
